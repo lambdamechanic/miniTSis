@@ -138,14 +138,12 @@ class TestingState {
     if (
       testCase.status === Status.INTERESTING &&
       (this.result === undefined ||
-        sortKey(testCase.choices) < sortKey(this.result))
+        // sorting keys don't work so well in typescript.
+        smallerThan(testCase.choices, this.result))
     ) {
+      console.info(`choices ${testCase.choices} is better than ${this.result}`);
       this.result = testCase.choices;
-      //console.log("setting a result!");
-    } else {
-      //console.log("not setting a result:");
     }
-    // console.log("finished testfunction");
   }
 
   target(): void {
@@ -222,9 +220,8 @@ class TestingState {
       throw new Error('current result inconsiderable');
     }
 
-    let prev: bigint[] = [];
-
-    while (!bigintArraysEqual(prev, this.result)) {
+    let prev;
+    while (prev === undefined || !bigintArraysEqual(prev, this.result)) {
       prev = this.result ? [...this.result] : [];
 
       for (let k = 8; k > 0; k /= 2) {
@@ -298,9 +295,7 @@ class TestingState {
             ...this.result.slice(0, i),
             ...this.result.slice(i + k),
           ];
-          if (consider(attempt)) {
-            this.result = attempt;
-          }
+          consider(attempt);
         }
       }
 
@@ -317,10 +312,32 @@ class TestingState {
           for (let j = i; j < i + k; j++) {
             attempt[j] = BigInt(0); // Reset chunk to zeroes
           }
-          if (consider(attempt)) {
-            // this.result = attempt;
+          consider(attempt);
+        }
+      }
+
+      // for reducing additive pairs
+      for (let k = 2; k >= 1; k--) {
+        for (let i: number = this.result.length - 1 - k; i >= 0; i--) {
+          const j = i + k;
+          if (j < this.result.length) {
+            // Try swapping out of order pairs
+            if (this.result[i] > this.result[j]) {
+              replace({[i]: this.result[j], [j]: this.result[i]});
+            }
+            // Adjust nearby pairs by redistributing value
+            if (j < this.result.length && this.result[i] > BigInt(0)) {
+              const previousI = this.result[i];
+              const previousJ = this.result[j];
+              binSearchDown(BigInt(0), previousI, (v: bigint) => {
+                // Attempt to replace the value at i with v and adjust j accordingly
+                return replace({
+                  [i]: v,
+                  [j]: previousJ + (previousI - v),
+                });
+              });
+            }
           }
-          // consider(attempt);
         }
       }
     }
@@ -407,11 +424,6 @@ class CachedTestFunction {
   }
 }
 
-// Helper function for sorting choices. Adjust according to your actual use case.
-function sortKey(choices: bigint[]): [number, bigint[]] {
-  return [choices.length, choices];
-}
-
 export function runTest(
   maxExamples = 100,
   random?: Random,
@@ -435,9 +447,9 @@ export function runTest(
         testCase.markStatus(Status.INTERESTING);
       }
     };
-
+    const defRandom = random ? random : new Random();
     const state = new TestingState(
-      random || new Random(),
+      defRandom,
       markFailuresInteresting,
       maxExamples
     );
@@ -618,20 +630,21 @@ export class TestCase {
 
   constructor(
     prefix: bigint[],
-    random: Random,
+    random?: Random,
     maxSize = Infinity,
     printResults = true
   ) {
     this.prefix = prefix;
-    this.random = random;
+    // XXX Need a cast because below we assume self.random is not None;
+    // it can only be None if max_size == len(prefix)
+    this.random = random as Random;
     this.maxSize = maxSize;
     this.printResults = printResults;
     this.depth = 0;
   }
 
   static forChoices(choices: bigint[], printResults = false): TestCase {
-    const random = new Random(); // Assuming Random is appropriately initialized elsewhere
-    return new TestCase(choices, random, choices.length, printResults);
+    return new TestCase(choices, undefined, choices.length, printResults);
   }
 
   choice(n: bigint): bigint {
@@ -639,7 +652,10 @@ export class TestCase {
       this.random.randBigInt(BigInt(0), n)
     );
     if (this.shouldPrint()) {
+      //if (true) {
       console.log(`choice(${n}): ${result}`);
+      //console.warn(`choice(${n}): ${result}`);
+      // console.info(`random is ${this.random}`);
     }
     return result;
   }
@@ -929,4 +945,16 @@ function bigintArraysEqual(
   }
 
   return true; // All elements are equal
+}
+
+function smallerThan(a: bigint[], b: bigint[]): boolean {
+  if (a.length < b.length) return true;
+  if (a.length > b.length) return false;
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] < b[i]) return true;
+    if (a[i] > b[i]) return false;
+  }
+
+  return false; // Arrays are equal
 }

@@ -1,9 +1,18 @@
 // Assuming you have already translated minithesis functions and classes to TypeScript
-import {runTest, integers, lists, Random, TestCase, MapDB} from './index'; // Adjust import path as necessary
+import {
+  runTest,
+  integers,
+  bigIntegers,
+  lists,
+  Random,
+  TestCase,
+  MapDB,
+} from './index'; // Adjust import path as necessary
 function sum(arr: number[]): number {
   return arr.reduce((acc, curr) => acc + curr, 0);
 }
 
+const originalConsoleLog = console.log;
 let logMock: jest.SpyInstance;
 
 beforeEach(() => {
@@ -72,13 +81,13 @@ describe('Minithesis Tests', () => {
   );
 
   test('reduces additive pairs', () => {
-    const random = new Random(); // Use appropriate seed if necessary
+    const random = new Random(1212); // Use appropriate seed if necessary
     const database = new MapDB();
 
     const testFn = (testCase: TestCase) => {
-      const m = testCase.any(integers(0, 1000));
-      const n = testCase.any(integers(0, 1000));
-      console.info(`(${m}, ${n})`);
+      const m = testCase.choice(BigInt(1000));
+      const n = testCase.choice(BigInt(1000));
+      // console.info(`(${m}, ${n})`);
       if (m + n > 1000) {
         // console.log(`choice(1000): ${m}`, `choice(1000): ${n}`);
         throw new Error('Assertion failed: m + n > 1000');
@@ -88,6 +97,10 @@ describe('Minithesis Tests', () => {
     expect(() => {
       runTest(10000, random, database, false)(testFn);
     }).toThrow('Assertion failed: m + n > 1000');
+
+    // logMock.mock.calls.forEach((call, index) => {
+    //   originalConsoleLog(`Call ${index + 1}:`, call.join(', '));
+    // });
 
     expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('choice(1000): 1')
