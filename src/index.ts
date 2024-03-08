@@ -38,17 +38,14 @@ class Possibility<T> {
 
   map<S>(f: (value: T) => S): Possibility<S> {
     const newProduce = (testCase: TestCase): S => {
-      const value = this.produce(testCase);
-      return f(value);
+      return f(this.produce(testCase));
     };
     return new Possibility(newProduce, `${this.name}.map(${f.name})`);
   }
 
   bind<S>(f: (value: T) => Possibility<S>): Possibility<S> {
     const newProduce = (testCase: TestCase): S => {
-      const value = this.produce(testCase);
-      const newPossibility = f(value);
-      return newPossibility.produce(testCase);
+      return f(this.produce(testCase)).produce(testCase);
     };
     return new Possibility(newProduce, `${this.name}.bind(${f.name})`);
   }
@@ -61,9 +58,9 @@ class Possibility<T> {
           return candidate;
         }
       }
-      throw new Error('No satisfying value found.');
+      testCase.reject();
     };
-    return new Possibility(newProduce, `${this.name}.satisfying(${f.name})`);
+    return new Possibility(newProduce, `${this.name}.select(${f.name})`);
   }
 }
 
@@ -100,7 +97,6 @@ export class TestingState {
       this.testFunctionCallback(testCase);
     } catch (error) {
       if (!(error instanceof StopTest)) {
-        // console.log("threw non-stoptest error:", error);
         throw error;
       }
     }
@@ -147,28 +143,30 @@ export class TestingState {
     }
   }
 
-  target(): void {
+  async target(): Promise<void> {
     if (this.result !== undefined || this.bestScoring === undefined) {
       return;
     }
 
-    const adjust = (i: number, step: bigint): boolean => {
-      console.log('adjust', i);
-      if (this.bestScoring === undefined) {
-        throw new Error(
-          'logic error, bestScoring should always be defined at this point'
-        );
+    const adjust = async (i: number, step: bigint): Promise<boolean> => {
+      if (!this.bestScoring) {
+        throw new Error('bestScoring undefined, should be impossible');
       }
+
       const [score, choices] = this.bestScoring;
-      if (choices[i] + step < 0 || choices[i] >= Math.pow(2, 64)) {
+      if (choices[i] + step < 0n || choices[i] + step >= BigInt(2 ** 64)) {
         return false;
       }
-      const attempt = [...choices];
+      const attempt = choices.slice(); // Clone array
       attempt[i] += step;
-      const testCase = new TestCase(attempt, this.random, BUFFER_SIZE);
-      this.testFunction(testCase);
-      if (testCase.status === undefined)
-        throw new Error('Test case did not set a status');
+      const testCase = new TestCase(attempt, this.random, attempt.length); // Adjust as needed
+
+      await this.testFunction(testCase); // Ensure testFunction handles async correctly
+      if (testCase.status === undefined) {
+        throw new Error(
+          `status undefined, should be impossible; ${testCase}, ${i}, ${step}, ${this.bestScoring}`
+        );
+      }
       return (
         testCase.status >= Status.VALID &&
         testCase.targetingScore !== undefined &&
@@ -176,15 +174,41 @@ export class TestingState {
       );
     };
 
-    // Loop and adjust logic based on the original Python's implementation
-    // The actual looping and hill climbing logic needs to be adapted based on your use case
+    while (this.shouldKeepGenerating()) {
+      const i = this.random.randInt(0, this.bestScoring[1].length - 1);
+      let sign = 0n;
+      for (const k of [1n, -1n]) {
+        if (!this.shouldKeepGenerating()) {
+          return;
+        }
+        if (await adjust(i, k)) {
+          sign = k;
+          break;
+        }
+      }
+      if (sign === 0n) {
+        continue;
+      }
+
+      let k = 1n;
+      while (this.shouldKeepGenerating() && (await adjust(i, sign * k))) {
+        k *= 2n;
+      }
+
+      while (k > 0n) {
+        while (this.shouldKeepGenerating() && (await adjust(i, sign * k))) {
+          // Intentionally empty
+        }
+        k /= 2n;
+      }
+    }
   }
 
-  run(): void {
+  async run(): Promise<void> {
     //console.log("toplevel generate");
     this.generate();
     //console.log("toplevel target");
-    this.target();
+    await this.target();
     // console.log("toplevel shrink");
     this.shrink();
     // console.error("toplevel done!");
@@ -496,7 +520,7 @@ export function runTest(
     }
     //     console.log("state is", state);
     if (state.result === undefined) {
-      state.run();
+      await state.run();
     }
 
     if (state.validTestCases === 0) {
@@ -668,30 +692,29 @@ export class TestCase {
       this.random.randBigInt(BigInt(0), n)
     );
     if (this.shouldPrint()) {
-      //if (true) {
       console.log(`choice(${n}): ${result}`);
-      //console.warn(`choice(${n}): ${result}`);
-      // console.info(`random is ${this.random}`);
     }
     return result;
   }
 
-  weighted(p: number): bigint {
+  weighted(p: number): boolean {
     // console.log(`weighted: ${p}`);
     if (!this) {
       throw new Error('badthis');
     }
     if (p <= 0) {
-      return this.forcedChoice(BigInt(0));
+      return Boolean(this.forcedChoice(0n));
     } else if (p >= 1) {
-      return this.forcedChoice(BigInt(1));
+      return Boolean(this.forcedChoice(1n));
     } else {
       //console.log("using weighted");
-      const result = this.makeChoice(BigInt(1), () => {
-        const fl = this.random.randFloat();
-        // console.log(`the float is ${fl}, p is ${p}`);
-        return BigInt(fl <= p ? 1 : 0);
-      });
+      const result = Boolean(
+        this.makeChoice(BigInt(1), () => {
+          const fl = this.random.randFloat();
+          // console.log(`the float is ${fl}, p is ${p}`);
+          return BigInt(fl <= p ? 1 : 0);
+        })
+      );
       if (this.shouldPrint()) {
         console.log(`weighted(${p}): ${result}`);
       }
@@ -704,7 +727,7 @@ export class TestCase {
       throw new Error(`Invalid choice ${n}`);
     }
     if (this.status !== undefined) {
-      throw new Error('TestCase is frozen');
+      throw new Frozen();
     }
     if (this.choices.length >= this.maxSize) {
       this.markStatus(Status.OVERRUN);
@@ -753,7 +776,7 @@ export class TestCase {
 
   markStatus(status: Status): never {
     if (this.status !== undefined) {
-      throw new Error('TestCase already has a status');
+      throw new Frozen();
     }
     this.status = status;
     throw new StopTest();
@@ -761,7 +784,7 @@ export class TestCase {
   }
 
   private shouldPrint(): boolean {
-    //  console.log("shouldprint?", this.printResults, this.depth);
+    // console.info("shouldprint?", this.printResults, this.depth);
     return this.printResults && this.depth === 0;
   }
 
@@ -771,7 +794,7 @@ export class TestCase {
       throw new Error(`Invalid choice ${n}`);
     }
     if (this.status !== undefined) {
-      throw new Error('TestCase is frozen');
+      throw new Frozen();
     }
     if (this.choices.length >= this.maxSize) {
       this.markStatus(Status.OVERRUN);
