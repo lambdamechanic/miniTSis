@@ -141,7 +141,7 @@ class TestingState {
         // sorting keys don't work so well in typescript.
         smallerThan(testCase.choices, this.result))
     ) {
-      console.info(`choices ${testCase.choices} is better than ${this.result}`);
+      // console.info(`choices ${testCase.choices} is better than ${this.result}`);
       this.result = testCase.choices;
     }
   }
@@ -353,6 +353,15 @@ class TestingState {
   }
 }
 
+// Helper function for sorting choices. Adjust according to your actual use case.
+function sortKey(choices: bigint[]): [number, bigint[]] {
+  return [choices.length, choices];
+}
+
+function compareArraysBadly(a: bigint[], b: bigint[]): boolean {
+  return sortKey(a) < sortKey(b);
+}
+
 class CachedTestFunction {
   private testFunction: (testCase: TestCase) => void;
   // Using Map to represent a tree structure
@@ -429,8 +438,8 @@ export function runTest(
   random?: Random,
   database?: Database, // Assume Database interface/type is defined elsewhere
   quiet = false
-): (test: (testCase: TestCase) => void) => void {
-  return (test: (testCase: TestCase) => void) => {
+): (test: (testCase: TestCase) => void) => Promise<void> {
+  return  async (test: (testCase: TestCase) => void) => {
     const markFailuresInteresting = (testCase: TestCase): void => {
       // console.log("markFailuresInteresting", testCase);
       try {
@@ -447,6 +456,7 @@ export function runTest(
         testCase.markStatus(Status.INTERESTING);
       }
     };
+
     const defRandom = random ? random : new Random();
     const state = new TestingState(
       defRandom,
@@ -457,11 +467,9 @@ export function runTest(
       throw new Error('need a db');
     }
     const db = database; // || new DirectoryDB(".minitest-cache");
-
-    const previousFailure = db.get(test.name);
-    // console.log("previous failure", previousFailure);
+    const testName = (test as any).testName;
+    const previousFailure = await db.get(testName);
     if (previousFailure !== null) {
-      console.log('loading previous failure');
       const choices: bigint[] = [];
       for (let i = 0; i < previousFailure.length; i += 8) {
         // Use DataView to interpret each group of 8 bytes as a 64-bit big-endian integer
@@ -489,7 +497,7 @@ export function runTest(
       throw new Unsatisfiable();
     }
     if (state.result === undefined) {
-      db.delete(test.name);
+      await db.delete((test as any).testName);
     } else {
       // Calculate the total byte length needed (8 bytes per bigint)
       const totalBytes = state.result.length * 8;
@@ -506,7 +514,7 @@ export function runTest(
       const uint8Array = new Uint8Array(buffer);
       // console.log(`setting ${test.name} to buffer ${uint8Array}`);
       // Set the Uint8Array in the database
-      db.set(test.name, uint8Array);
+      await db.set((test as any).testName, uint8Array);
       //      console.log(`running test again i guess? state.result=${state.result}`);
       const newTestCase: TestCase = TestCase.forChoices(state.result, !quiet);
 
@@ -612,10 +620,10 @@ export function nothing<T>(): Possibility<T> {
 
 // Implement DirectoryDB with Node.js's fs module or IndexedDB in browsers
 // Additional TypeScript translations for minithesis
-interface Database {
-  set(key: string, value: Uint8Array): void;
-  get(key: string): Uint8Array | null;
-  delete(key: string): void;
+export interface Database {
+  set(key: string, value: Uint8Array): Promise<void>;
+  get(key: string): Promise<Uint8Array | null>;
+  delete(key: string): Promise<void>;
 }
 
 export class TestCase {
@@ -809,36 +817,16 @@ export class MapDB implements Database {
     this.data = new Map();
   }
 
-  set(key: string, value: Uint8Array): void {
+  async set(key: string, value: Uint8Array): Promise<void> {
     this.data.set(key, value);
   }
 
-  get(key: string): Uint8Array | null {
+  async get(key: string): Promise<Uint8Array | null> {
     return this.data.has(key) ? this.data.get(key)! : null;
   }
 
-  delete(key: string): void {
+  async delete(key: string): Promise<void> {
     this.data.delete(key);
-  }
-}
-
-// Simplified DirectoryDB example - Adjust based on your environment (Node.js or browser)
-export class DirectoryDB implements Database {
-  constructor(private directory: string) {
-    // Implementation depends on environment, e.g., fs in Node.js or IndexedDB in browsers
-  }
-
-  set(key: string, value: Uint8Array): void {
-    // Implementation
-  }
-
-  get(key: string): Uint8Array | null {
-    // Implementation
-    return null;
-  }
-
-  delete(key: string): void {
-    // Implementation
   }
 }
 
