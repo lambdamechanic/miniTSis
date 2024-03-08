@@ -1,3 +1,16 @@
+
 {
-  "extends": "./node_modules/gts/"
+  "extends": "./node_modules/gts/",
+  "plugins": [
+    "node"
+  ],
+  "settings": {
+    "node": {
+      "version": ">=10.4.0",
+      "tryExtensions": [".js", ".json", ".node", ".ts", ".d.ts"]
+    }
+  },
+  "rules": {
+    // You can override or specify additional rules here
+  }
 }
