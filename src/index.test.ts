@@ -2,14 +2,17 @@
 import {
   runTest,
   Unsatisfiable,
+  TestingState,
   integers,
   bigIntegers,
+  CachedTestFunction,
   toNumber,
   lists,
   Random,
   TestCase,
   MapDB,
   Database,
+  Status,
 } from './index'; // Adjust import path as necessary
 
 // import StorageDB from './StorageDB';
@@ -207,5 +210,32 @@ describe('Minithesis Tests', () => {
       expect(afterFilesCount).toBe(1);
       expect(count).toBe(prevCount + 2);
     });
+  });
+
+  test('test_function_cache', async () => {
+    const testFn = (testCase: TestCase) => {
+      if (testCase.choice(1000n) >= 200n) {
+        testCase.markStatus(Status.INTERESTING);
+      }
+      if (testCase.choice(1n) === 0n) {
+        testCase.reject();
+      }
+    };
+
+    const random = new Random(0);
+    const state = new TestingState(random, wrapWithName(testFn), 100);
+    const cache = new CachedTestFunction(state.testFunction.bind(state));
+    expect(state.calls).toBe(0);
+    expect(await cache.call([1n, 1n])).toBe(Status.VALID);
+    expect(state.calls).toBe(1);
+    expect(await cache.call([1n])).toBe(Status.OVERRUN);
+    expect(state.calls).toBe(1);
+    expect(await cache.call([1000n])).toBe(Status.INTERESTING);
+    expect(state.calls).toBe(2);
+    expect(await cache.call([1000n])).toBe(Status.INTERESTING);
+    expect(state.calls).toBe(2);
+    expect(await cache.call([1000n, 1n])).toBe(Status.INTERESTING);
+
+    expect(state.calls).toBe(2);
   });
 });

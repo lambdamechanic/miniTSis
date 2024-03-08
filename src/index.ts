@@ -7,7 +7,7 @@
 // }
 
 // Enums and other classes need to be handled similarly
-enum Status {
+export enum Status {
   OVERRUN = 0,
   INVALID = 1,
   VALID = 2,
@@ -67,7 +67,7 @@ class Possibility<T> {
   }
 }
 
-class TestingState {
+export class TestingState {
   random: Random;
   testFunctionCallback: (testCase: TestCase) => void;
   maxExamples: number;
@@ -109,6 +109,7 @@ class TestingState {
     if (testCase.status === undefined) {
       testCase.status = Status.VALID;
     }
+
     this.calls++;
     if (testCase.status >= Status.INVALID && testCase.choices.length === 0) {
       console.log('trivial');
@@ -362,7 +363,7 @@ function compareArraysBadly(a: bigint[], b: bigint[]): boolean {
   return sortKey(a) < sortKey(b);
 }
 
-class CachedTestFunction {
+export class CachedTestFunction {
   private testFunction: (testCase: TestCase) => void;
   // Using Map to represent a tree structure
   // this could be done better with something like
@@ -403,6 +404,11 @@ class CachedTestFunction {
         return node;
       }
     }
+    // equivalent to a KeyError in python
+    if (node !== undefined && !Object.values(Status).includes(node)) {
+      return Status.OVERRUN;
+    }
+
     //console.log("past choices", JSON.stringify(choices.map((a) => toNumber(a))));
 
     // Correctly use the static forChoices method to create a new TestCase
@@ -458,6 +464,7 @@ export function runTest(
     };
 
     const defRandom = random ? random : new Random();
+    const testName = (test as any).testName;
     const state = new TestingState(
       defRandom,
       markFailuresInteresting,
@@ -467,7 +474,7 @@ export function runTest(
       throw new Error('need a db');
     }
     const db = database; // || new DirectoryDB(".minitest-cache");
-    const testName = (test as any).testName;
+
     const previousFailure = await db.get(testName);
     if (previousFailure !== null) {
       const choices: bigint[] = [];
@@ -496,8 +503,9 @@ export function runTest(
       console.log('unsatisfiable');
       throw new Unsatisfiable();
     }
+
     if (state.result === undefined) {
-      await db.delete((test as any).testName);
+      await db.delete(testName);
     } else {
       // Calculate the total byte length needed (8 bytes per bigint)
       const totalBytes = state.result.length * 8;
@@ -514,7 +522,7 @@ export function runTest(
       const uint8Array = new Uint8Array(buffer);
       // console.log(`setting ${test.name} to buffer ${uint8Array}`);
       // Set the Uint8Array in the database
-      await db.set((test as any).testName, uint8Array);
+      await db.set(testName, uint8Array);
       //      console.log(`running test again i guess? state.result=${state.result}`);
       const newTestCase: TestCase = TestCase.forChoices(state.result, !quiet);
 
