@@ -17,8 +17,8 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { createDataStore } from './DataStoreFactory';
-import { IDataStore } from './IDataStore';
+import {createDataStore} from './DataStoreFactory';
+import {IDataStore} from './IDataStore';
 
 const originalConsoleLog = console.log;
 let logMock: jest.SpyInstance;
@@ -36,12 +36,13 @@ afterEach(() => {
 // Minithesis uses pytest marking and decorators to get the name of the current test.
 // in the interest of not changing the code flow too much, we'll pull some evil tricks.
 
-function wrapWithName(testFn: (testCase: TestCase) => void): (testCase: TestCase) => void {
+function wrapWithName(
+  testFn: (testCase: TestCase) => void
+): (testCase: TestCase) => void {
   const currentTestName = expect.getState().currentTestName;
   (testFn as any).testName = currentTestName;
   return testFn;
 }
-
 
 class DBWrapper implements Database {
   private dataStore: IDataStore<string>;
@@ -63,7 +64,7 @@ class DBWrapper implements Database {
   async delete(key: string): Promise<void> {
     await this.dataStore.delete(key);
   }
-  async count() : Promise<number> {
+  async count(): Promise<number> {
     return await this.dataStore.count();
   }
 }
@@ -78,8 +79,7 @@ function fromBase64(base64String: string): Uint8Array {
 describe('Minithesis Tests', () => {
   test.each(Array.from({length: 10}, (_, i) => i))(
     'finds small list new - seed %i',
-    async (seed) => {
-
+    async seed => {
       function sum(arr: number[]): number {
         return arr.reduce((acc, curr) => acc + curr, 0);
       }
@@ -92,19 +92,16 @@ describe('Minithesis Tests', () => {
         }
       });
 
-
-
       const random = new Random(seed);
       const database = new MapDB();
-      await expect(runTest(100, random, database, false)(testFn))
-	.rejects
-	.toThrow('Assertion failed: sum(ls) <= 1000');
+      await expect(
+        runTest(100, random, database, false)(testFn)
+      ).rejects.toThrow('Assertion failed: sum(ls) <= 1000');
 
       // Verify the log includes the expected message from minithesis logic, not the testFn
       expect(logMock).toHaveBeenCalledWith(
         expect.stringContaining('any(lists(integers(0, 10000))): [1001]')
       );
-
     }
   );
 
@@ -122,9 +119,9 @@ describe('Minithesis Tests', () => {
       }
     };
 
-    await expect(runTest(10000, random, database, false)(wrapWithName(testFn)))
-      .rejects
-      .toThrow('Assertion failed: m + n > 1000');
+    await expect(
+      runTest(10000, random, database, false)(wrapWithName(testFn))
+    ).rejects.toThrow('Assertion failed: m + n > 1000');
 
     expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('choice(1000): 1')
@@ -152,21 +149,21 @@ describe('Minithesis Tests', () => {
       testCase.reject(); // This should cause Unsatisfiable to be thrown
     };
 
-
-    await expect(runTest(100, new Random(), new MapDB(), false)(testFn))
-      .rejects
-      .toThrow(Unsatisfiable);
+    await expect(
+      runTest(100, new Random(), new MapDB(), false)(testFn)
+    ).rejects.toThrow(Unsatisfiable);
   });
   test('error on unbounded test function', async () => {
     const testFn = (testCase: TestCase) => {
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         testCase.choice(BigInt(10));
       }
     };
 
-    expect(runTest(5, new Random(), new MapDB(), false)(testFn))
-      .rejects
-      .toThrow(Unsatisfiable );
+    expect(
+      runTest(5, new Random(), new MapDB(), false)(testFn)
+    ).rejects.toThrow(Unsatisfiable);
   });
 
   describe('test reuses results from the database', () => {
@@ -193,9 +190,9 @@ describe('Minithesis Tests', () => {
         }
       };
 
-      await expect(runTest(100, new Random(), db, false)(wrapWithName(testFn))).rejects.toThrow(
-        'Choice is too high'
-      );
+      await expect(
+        runTest(100, new Random(), db, false)(wrapWithName(testFn))
+      ).rejects.toThrow('Choice is too high');
       return db;
     };
 

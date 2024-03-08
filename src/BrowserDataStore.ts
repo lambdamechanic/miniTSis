@@ -1,7 +1,5 @@
 import * as localForage from 'localforage';
-import { IDataStore } from './IDataStore';
-
-
+import {IDataStore} from './IDataStore';
 
 // BrowserDataStore.ts
 export class BrowserDataStore<U> implements IDataStore<U> {
@@ -28,7 +26,7 @@ export class BrowserDataStore<U> implements IDataStore<U> {
     await localForage.clear();
   }
 
-  async count (): Promise<number> {
+  async count(): Promise<number> {
     return 0; // todo
   }
 }

@@ -439,7 +439,7 @@ export function runTest(
   database?: Database, // Assume Database interface/type is defined elsewhere
   quiet = false
 ): (test: (testCase: TestCase) => void) => Promise<void> {
-  return  async (test: (testCase: TestCase) => void) => {
+  return async (test: (testCase: TestCase) => void) => {
     const markFailuresInteresting = (testCase: TestCase): void => {
       // console.log("markFailuresInteresting", testCase);
       try {

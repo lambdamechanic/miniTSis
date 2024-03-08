@@ -1,12 +1,11 @@
-import { IDataStore } from './IDataStore';
-import { BrowserDataStore } from './BrowserDataStore';
-import { NodeDataStore } from './NodeDataStore';
+import {IDataStore} from './IDataStore';
+import {BrowserDataStore} from './BrowserDataStore';
+import {NodeDataStore} from './NodeDataStore';
 
+const _nodejs =
+  typeof process !== 'undefined' && process.versions && process.versions.node;
 
-var _nodejs = (typeof process !== 'undefined' && process.versions && process.versions.node);
-
-
-const isBrowser: boolean = _nodejs === undefined
+const isBrowser: boolean = _nodejs === undefined;
 
 export function createDataStore<U>(dbPath: string): IDataStore<U> {
   if (isBrowser) {

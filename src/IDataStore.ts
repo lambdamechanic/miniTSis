@@ -1,4 +1,4 @@
- // Interface definition
+// Interface definition
 export interface IDataStore<U> {
   set(key: string, value: U): Promise<void>;
   get(key: string): Promise<U | null>;
