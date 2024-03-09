@@ -15,16 +15,15 @@ methodology](https://drmaciver.github.io/papers/reduction-via-generation-preview
 Minithesis, you can actually guarantee optimal shrinking (at least given enough time, in small cases):
 
 ```
-  test( 'shrinking regression in fast-check', async () => {
+  test('shrinking regression in fast-check', async () => {
     const testFn = (testCase: TestCase) => {
       const [a, b] = testCase.any(integers(0,100).bind(b =>	tuples(integers(0,b), just(b))))
 
       // The predicate that will fail if 'a' and 'b' are not close enough
       if (b - a > 5n) {
-		  throw new Error(`Predicate failed: b (${b}) - a (${a}) > 5`);
+   	      throw new Error(`Predicate failed: b (${b}) - a (${a}) > 5`);
       }
     };
-
 
     expect(runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn)))
       .rejects.toThrow("Predicate failed: b (6) - a (0) > 5")
