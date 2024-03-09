@@ -571,6 +571,20 @@ export function bigIntegers(min: bigint, max: bigint): Possibility<bigint> {
   }, `bigIntegers(${min}, ${max})`);
 }
 
+export function sublists<T>(list: T[]): Possibility<T[]> {
+  const produce = (testCase: TestCase): T[] => {
+    const result: T[] = [];
+    for (const el of list) {
+      if (testCase.weighted(0.5)) {
+        result.push(el);
+      }
+    }
+    return result;
+  };
+
+  return new Possibility(produce, `sublists(${JSON.stringify(list)})`);
+}
+
 export function lists<T>(
   elements: Possibility<T>,
   minSize = 0,
