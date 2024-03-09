@@ -29,7 +29,7 @@ import * as os from 'os';
 import {createDataStore} from './DataStoreFactory';
 import {IDataStore} from './IDataStore';
 
-const originalConsoleLog = console.log;
+// const originalConsoleLog = console.log;
 let logMock: jest.SpyInstance;
 
 beforeEach(() => {
@@ -49,6 +49,7 @@ function wrapWithName(
   testFn: (testCase: TestCase) => void
 ): (testCase: TestCase) => void {
   const currentTestName = expect.getState().currentTestName;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (testFn as any).testName = currentTestName;
   return testFn;
 }
@@ -181,7 +182,9 @@ describe('Minithesis Tests', () => {
 
     beforeAll(async () => {
       // Create a temporary directory to act as the database directory
-      tempDirPath = await fs.mkdtemp(path.join(os.tmpdir(), 'minithesis-test-'));
+      tempDirPath = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'minithesis-test-')
+      );
     });
 
     afterAll(async () => {
@@ -513,12 +516,13 @@ describe('Minithesis Tests', () => {
         }
       }
       const s = tc.choice(1n);
-      if (s != 0n) {
-        throw new Error(`Failure in choice(1)`);
+      if (s !== 0n) {
+        throw new Error('Failure in choice(1)');
       }
     };
-    expect(runTest(1, new Random(), new MapDB(), false)(wrapWithName(testFn)))
-      .rejects.toThrow("Failure in choice(1)");
+    expect(
+      runTest(1, new Random(), new MapDB(), false)(wrapWithName(testFn))
+    ).rejects.toThrow('Failure in choice(1)');
   });
 
   test('guaranteed weighted', async () => {
@@ -611,27 +615,26 @@ describe('Minithesis Tests', () => {
     const database = new MapDB(); // Assuming MapDB is a suitable in-memory database or similar setup
 
     //logMock.mockRestore()
-    expect(runTest(1000, random, database, false)(wrapWithName(testFn)))
-      .rejects.toThrow(/broken combination: (1,7|7,1)/);
-
+    expect(
+      runTest(1000, random, database, false)(wrapWithName(testFn))
+    ).rejects.toThrow(/broken combination: (1,7|7,1)/);
   });
 
   // derived from bad shrink at https://github.com/dubzzz/fast-check/issues/650#issuecomment-648397230
-  test( 'shrinking regression in fast-check', async () => {
+  test('shrinking regression in fast-check', async () => {
     const testFn = (testCase: TestCase) => {
-      const [a, b] = testCase.any(integers(0,100).bind(b =>
-	tuples(integers(0,b), just(b))))
+      const [a, b] = testCase.any(
+        integers(0, 100).bind(b => tuples(integers(0, b), just(b)))
+      );
 
       // The predicate that will fail if 'a' and 'b' are not close enough
       if (b - a > 5n) {
-	throw new Error(`Predicate failed: b (${b}) - a (${a}) > 5`);
+        throw new Error(`Predicate failed: b (${b}) - a (${a}) > 5`);
       }
     };
 
-
-    expect(runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn)))
-      .rejects.toThrow("Predicate failed: b (6) - a (0) > 5")
-
+    expect(
+      runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
+    ).rejects.toThrow('Predicate failed: b (6) - a (0) > 5');
   });
-
 });

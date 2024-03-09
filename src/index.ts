@@ -378,15 +378,6 @@ export class TestingState {
   }
 }
 
-// Helper function for sorting choices. Adjust according to your actual use case.
-function sortKey(choices: bigint[]): [number, bigint[]] {
-  return [choices.length, choices];
-}
-
-function compareArraysBadly(a: bigint[], b: bigint[]): boolean {
-  return sortKey(a) < sortKey(b);
-}
-
 export class CachedTestFunction {
   private testFunction: (testCase: TestCase) => void;
   // Using Map to represent a tree structure
@@ -398,28 +389,25 @@ export class CachedTestFunction {
 
   // type Node<T> = INode<T> | T;
   // next version perhaps.
+
+  // for now though:
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private tree: Map<number, any> = new Map();
 
   constructor(testFunction: (testCase: TestCase) => void) {
     this.testFunction = tc => {
-      // console.log("entering testfunction");
-      const r = testFunction(tc);
-      // console.log("returning from testfunction", r, tc);
-      return r;
+      return testFunction(tc);
     };
   }
 
   public call(choices: bigint[]): Status {
-    //console.log("entering cached call", JSON.stringify(choices.map((a) => toNumber(a))));
-    //console.log("tree", this.tree);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let node: any = this.tree; // Start at the root of the tree
     for (const c of choices) {
       node = node.get(c);
       if (node === undefined) {
-        // console.log("undefined node");
         break;
       }
-      // console.log("node is ", node);
       // If we encounter a Status value, it means we've previously computed this path
       if (Object.values(Status).includes(node)) {
         // Asserting that it's not OVERRUN just for validation, similar to the original Python
@@ -488,6 +476,8 @@ export function runTest(
     };
 
     const defRandom = random ? random : new Random();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const testName = (test as any).testName;
     const state = new TestingState(
       defRandom,
@@ -591,13 +581,9 @@ export function lists<T>(
   maxSize = Infinity
 ): Possibility<T[]> {
   return new Possibility<T[]>((testCase: TestCase) => {
-    // console.log(`in lists: min:${minSize}, max:${maxSize}`);
     const result: T[] = [];
     let continueLoop = true;
-    let listLoop = 0;
     while (continueLoop) {
-      listLoop += 1;
-      //console.log(`list loop ${listLoop}`);
       if (result.length < minSize) {
         console.log('forced choice 1');
         testCase.forcedChoice(BigInt(1));
@@ -610,19 +596,14 @@ export function lists<T>(
         continueLoop = false;
       } else {
         const weight = testCase.weighted(0.9);
-        // console.log(`weight is ${weight}`);
         if (!weight) {
-          // console.log("weighted 0.9");
           continueLoop = false;
-        } else {
-          // console.log("length wasn't less than minSize, or more than maxSize, and weighted didn't fire");
         }
       }
       if (continueLoop) {
         result.push(testCase.any(elements));
       }
     }
-    // console.log("list results", result);
     return result;
   }, `lists(${elements})`);
 }
