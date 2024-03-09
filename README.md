@@ -1,6 +1,8 @@
 # MiniTSis
 
-This is a more-or-less faithful clone of David MacIver's [Minithesis](https://github.com/drmaciver/minithesis).
+This is a more-or-less faithful clone of David MacIver's [Minithesis](https://github.com/drmaciver/minithesis), a generative testing library.
+As such, it offers internal shrinking and a test case database.
+
 
 ## Why use this?
 
