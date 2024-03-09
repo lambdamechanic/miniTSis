@@ -23,7 +23,7 @@ Minithesis, you can actually guarantee optimal shrinking (at least given enough 
 
       // The predicate that will fail if 'a' and 'b' are not close enough
       if (b - a > 5n) {
-   	      throw new Error(`Predicate failed: b (${b}) - a (${a}) > 5`);
+	    throw new Error(`Predicate failed: b (${b}) - a (${a}) > 5`);
       }
     };
 
