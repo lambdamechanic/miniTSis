@@ -22,7 +22,7 @@ export class Unsatisfiable extends Error {}
 export class StopTest extends Error {}
 export class Frozen extends Error {}
 
-class Possibility<T> {
+export class Possibility<T> {
   public produce: (testCase: TestCase) => T;
   public name: string;
 
@@ -43,12 +43,16 @@ class Possibility<T> {
     return new Possibility(newProduce, `${this.name}.map(${f.name})`);
   }
 
+  // a no-op to satisfy fast-check.
+  noShrink() { return this;}
+
   bind<S>(f: (value: T) => Possibility<S>): Possibility<S> {
     const newProduce = (testCase: TestCase): S => {
       return f(this.produce(testCase)).produce(testCase);
     };
     return new Possibility(newProduce, `${this.name}.bind(${f.name})`);
   }
+  chain = this.bind;
 
   satisfying(f: (value: T) => boolean): Possibility<T> {
     const newProduce = (testCase: TestCase): T => {
@@ -611,6 +615,7 @@ export function lists<T>(
 export function just<T>(value: T): Possibility<T> {
   return new Possibility<T>(() => value, `just(${value})`);
 }
+
 
 export function toNumber(bigintValue: bigint): number {
   if (

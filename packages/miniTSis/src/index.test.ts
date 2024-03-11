@@ -26,8 +26,27 @@ import {
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import {createDataStore} from './DataStoreFactory';
-import {IDataStore} from './IDataStore';
+import {DBWrapper} from './DBWrapper';
+
+import {IDataStore} from 'miniTSis-datastore';
+import {BrowserDataStore} from 'miniTSis-browser'
+import {NodeDataStore} from 'miniTSis-node';
+
+const _nodejs =
+  typeof process !== 'undefined' && process.versions && process.versions.node;
+
+const isBrowser: boolean = _nodejs === undefined;
+
+export function createDataStore<U>(dbPath: string): IDataStore<U> {
+  if (isBrowser) {
+    // We're in a browser environment
+    return new BrowserDataStore<U>(dbPath); // The dbPath is ignored in the browser
+  } else {
+    // We're in a Node.js environment
+    return new NodeDataStore<U>(dbPath);
+  }
+}
+
 
 // const originalConsoleLog = console.log;
 let logMock: jest.SpyInstance;
@@ -54,37 +73,6 @@ function wrapWithName(
   return testFn;
 }
 
-class DBWrapper implements Database {
-  private dataStore: IDataStore<string>;
-
-  constructor(dataStore: IDataStore<string>) {
-    this.dataStore = dataStore;
-  }
-
-  async set(key: string, value: Uint8Array): Promise<void> {
-    const base64Value = toBase64(value);
-    await this.dataStore.set(key, base64Value);
-  }
-
-  async get(key: string): Promise<Uint8Array | null> {
-    const base64Value = await this.dataStore.get(key);
-    return base64Value ? fromBase64(base64Value) : null;
-  }
-
-  async delete(key: string): Promise<void> {
-    await this.dataStore.delete(key);
-  }
-  async count(): Promise<number> {
-    return await this.dataStore.count();
-  }
-}
-function toBase64(arrayBuffer: Uint8Array): string {
-  return Buffer.from(arrayBuffer).toString('base64');
-}
-
-function fromBase64(base64String: string): Uint8Array {
-  return Uint8Array.from(Buffer.from(base64String, 'base64'));
-}
 
 describe('Minithesis Tests', () => {
   test.each(Array.from({length: 10}, (_, i) => i))(
@@ -471,7 +459,7 @@ describe('Minithesis Tests', () => {
       );
       expect(m <= n && n <= m + 10n).toBe(true);
     });
-    await runTest(1, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, new Random(), new MapDB(), false)(testFn);
   });
 
   test('cannot witness nothing', async () => {
@@ -479,7 +467,7 @@ describe('Minithesis Tests', () => {
       tc.any(nothing());
     });
     await expect(
-      runTest(1, new Random(), new MapDB(), false)(testFn)
+      runTest(100, new Random(), new MapDB(), false)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -488,7 +476,7 @@ describe('Minithesis Tests', () => {
       tc.any(mixOf());
     });
     await expect(
-      runTest(1, new Random(), new MapDB(), false)(testFn)
+      runTest(100, new Random(), new MapDB(), false)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -520,8 +508,8 @@ describe('Minithesis Tests', () => {
         throw new Error('Failure in choice(1)');
       }
     };
-    expect(
-      runTest(1, new Random(), new MapDB(), false)(wrapWithName(testFn))
+    await expect(
+      runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Failure in choice(1)');
   });
 
@@ -535,7 +523,7 @@ describe('Minithesis Tests', () => {
       }
     });
     await expect(
-      runTest(1, new Random(), new MapDB(), false)(testFn)
+      runTest(100, new Random(), new MapDB(), false)(testFn)
     ).rejects.toThrow('Failure');
   });
 
@@ -545,7 +533,7 @@ describe('Minithesis Tests', () => {
       expect(ls.length).toBeGreaterThanOrEqual(1);
       expect(ls.length).toBeLessThanOrEqual(3);
     });
-    await runTest(1, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, new Random(), new MapDB(), false)(testFn);
   });
 
   test('forced choice bounds', async () => {

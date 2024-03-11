@@ -1,0 +1,22 @@
+{
+    "name": "miniTSis-datastore",
+    "version": "1.0.0",
+    "description": "",
+    "main": "build/index.js",
+    "types": "build/index.d.ts",
+
+    "license": "Apache-2.0",
+    "keywords": [],
+    "scripts": {
+	"build": "tsc --build",
+        "compile": "tsc",
+        "prepare": "npm run compile",
+        "pretest": "npm run compile"
+    },
+    "devDependencies": {
+        "typescript": "~5.2.0"
+    },
+    "exports": {
+	".": "./src/index.ts"
+    }
+}

@@ -1,0 +1,38 @@
+{
+
+    "name": "miniTSis-node",
+    "version": "1.0.0",
+    "description": "",
+    "main": "build/src/index.js",
+    "types": "build/src/index.d.ts",
+    "files": [
+	"build/"
+    ],
+    "license": "Apache-2.0",
+    "keywords": [],
+    "scripts": {
+	"build": "tsc --build",
+	"compile": "tsc",
+	"debug-tsc": "tsc --traceResolution",
+	"prepare": "npm run compile",
+
+	"pretest": "npm run compile"
+    },
+    "engines": {
+	"node": ">=14.14.0"
+    },
+    "dependencies": {
+	"miniTSis-datastore": "*",
+	"nedb-promises": "^6.2.3"
+    },
+    "exports": {
+	".": "./src/index.ts"
+    },
+    "devDependencies": {
+	"@types/node": "^20.11.25",
+
+
+	"typescript": "~5.2.0"
+    }
+
+}

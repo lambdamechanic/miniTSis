@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+      "rootDir": "src",
+      "outDir": "build",
+      "esModuleInterop": true,
+      "target": "ES2020",
+      "module": "commonjs", // "commonjs" | "amd" | "system" | "umd" | "es2015" | "esnext"
+      "moduleResolution": "node",
+      "preserveSymlinks": true,
+      "declaration": true,
+      "declarationMap": true,
+      "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

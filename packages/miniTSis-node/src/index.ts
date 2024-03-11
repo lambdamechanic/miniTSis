@@ -1,5 +1,5 @@
 import Datastore from 'nedb-promises';
-import {IDataStore} from './IDataStore';
+import {IDataStore} from 'miniTSis-datastore';
 
 export class NodeDataStore<U> implements IDataStore<U> {
   private db: Datastore<U>;

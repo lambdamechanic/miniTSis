@@ -1,0 +1,16 @@
+{
+    "name": "miniTSis-browser",
+    "version": "1.0.0",
+    "dependencies": {
+	"miniTSis-datastore": "^1.0.0",
+	"localforage": "*"
+
+    },
+    "scripts": {
+	"build" : "tsc --build",
+	"compile": "tsc"
+    },
+    "exports": {
+	".": "./src/index.ts"
+    }
+}
