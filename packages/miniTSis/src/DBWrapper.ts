@@ -1,6 +1,6 @@
 
 import {Database} from './index';
-import {IDataStore} from 'miniTSis-datastore';
+import {IDataStore} from 'minitsis-datastore';
 
 export class DBWrapper implements Database {
   private dataStore: IDataStore<string>;

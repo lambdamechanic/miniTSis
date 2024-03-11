@@ -28,9 +28,9 @@ import * as path from 'path';
 import * as os from 'os';
 import {DBWrapper} from './DBWrapper';
 
-import {IDataStore} from 'miniTSis-datastore';
-import {BrowserDataStore} from 'miniTSis-browser'
-import {NodeDataStore} from 'miniTSis-node';
+import {IDataStore} from 'minitsis-datastore';
+import {BrowserDataStore} from 'minitsis-browser'
+import {NodeDataStore} from 'minitsis-node';
 
 const _nodejs =
   typeof process !== 'undefined' && process.versions && process.versions.node;

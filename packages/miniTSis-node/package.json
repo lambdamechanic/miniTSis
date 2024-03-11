@@ -1,6 +1,6 @@
 {
 
-    "name": "miniTSis-node",
+    "name": "minitsis-node",
     "version": "1.0.0",
     "description": "",
     "main": "build/src/index.js",
@@ -22,7 +22,7 @@
 	"node": ">=14.14.0"
     },
     "dependencies": {
-	"miniTSis-datastore": "*",
+	"minitsis-datastore": "*",
 	"nedb-promises": "^6.2.3"
     },
     "exports": {

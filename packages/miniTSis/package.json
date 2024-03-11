@@ -1,5 +1,5 @@
 {
-    "name": "miniTSis",
+    "name": "minitsis",
     "version": "0.0.0",
     "description": "",
     "main": "build/src/index.js",
@@ -20,7 +20,7 @@
         "node": ">=14.14.0"
     },
     "dependencies": {
-        "miniTSis-datastore": "*"
+        "minitsis-datastore": "*"
     },
     "devDependencies": {
         "@types/jest": "^29.5.12",
@@ -31,8 +31,8 @@
         "nedb-promises": "^6.2.3",
         "ts-jest": "^29.1.2",
         "typescript": "~5.2.0",
-	"miniTSis-browser": "*",
-        "miniTSis-node": "*"
+	"minitsis-browser": "*",
+        "minitsis-node": "*"
 
     }
 }

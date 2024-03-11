@@ -1,5 +1,5 @@
 import * as localForage from 'localforage';
-import {IDataStore} from 'miniTSis-datastore';
+import {IDataStore} from 'minitsis-datastore';
 
 // BrowserDataStore.ts
 export class BrowserDataStore<U> implements IDataStore<U> {

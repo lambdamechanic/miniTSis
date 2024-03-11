@@ -1,8 +1,8 @@
 {
-    "name": "miniTSis-browser",
+    "name": "minitsis-browser",
     "version": "1.0.0",
     "dependencies": {
-	"miniTSis-datastore": "^1.0.0",
+	"minitsis-datastore": "^1.0.0",
 	"localforage": "*"
 
     },

@@ -1,5 +1,5 @@
 {
-    "name": "miniTSis-datastore",
+    "name": "minitsis-datastore",
     "version": "1.0.0",
     "description": "",
     "main": "build/index.js",
