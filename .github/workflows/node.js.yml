@@ -26,9 +26,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - run: npm ci --workspace miniTSis-datastore
-    - run: npm ci --workspace miniTSis-node
-    - run: npm ci --workspace miniTSis-browser
-    - run: npm ci --workspace miniTSis
+    - run: npm ci --workspace minitsis-datastore
+    - run: npm ci --workspace minitsis-node
+    - run: npm ci --workspace minitsis-browser
+    - run: npm ci --workspace minitsis
     - run: npm run build --if-present
-    - run: npm test --workspace miniTSis
+    - run: npm test --workspace minitsis
