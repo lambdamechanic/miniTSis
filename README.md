@@ -68,5 +68,3 @@ so I don't expect the test suite to actually run clientside. This is fixable wit
 More generators, as mentioned.
 
 `fast-check` compatibility shim, if possible.
-
-set up CI on github.
