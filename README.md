@@ -1,4 +1,5 @@
 # MiniTSis
+[![Node.js CI](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.js.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.js.yml)
 
 This is a more-or-less faithful clone of David MacIver's [Minithesis](https://github.com/drmaciver/minithesis), a generative testing library.
 As such, it offers internal shrinking and a test case database.
