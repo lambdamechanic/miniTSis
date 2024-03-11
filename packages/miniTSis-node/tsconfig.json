@@ -1,15 +1,16 @@
 {
-  "compilerOptions": {
-      "rootDir": "src",
-      "outDir": "build",
-      "esModuleInterop": true,
-      "target": "ES2020",
-      "module": "commonjs", // "commonjs" | "amd" | "system" | "umd" | "es2015" | "esnext"
-      "moduleResolution": "node",
-      "preserveSymlinks": true,
-      "declaration": true,
-      "declarationMap": true,
-      "sourceMap": true
-  },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "declaration": true,
+        "strict": true,
+        "incremental": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "rootDir": "./src",
+        "outDir": "./build",
+        "composite": true
+    }
 }

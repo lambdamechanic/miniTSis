@@ -1,19 +1,16 @@
 {
-    // "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "src",
-      "outDir": "build",
-      "moduleResolution": "Bundler",
-      "esModuleInterop": true,
-      "target": "ES2020",
-      "module": "ESNext",
-      "preserveSymlinks": true,
-      "declaration": true,
-      "declarationMap": true,
-      "sourceMap": true
-
-
-  },
-
-  "include": ["src/**/*.ts"]
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "declaration": true,
+        "strict": true,
+        "incremental": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "rootDir": "./src",
+        "outDir": "./build",
+        "composite": true
+    }
 }
