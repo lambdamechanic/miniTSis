@@ -1,6 +1,6 @@
 {
     "name": "minitsis",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -20,11 +20,12 @@
         "node": ">=14.14.0"
     },
     "dependencies": {
-        "minitsis-datastore": "^1.1.0"
+        "minitsis-datastore": "^1.2.0",
+	"uuid": "*"
     },
     "peerDependencies": {
         "minitsis-browser": "*",
-        "minitsis-node": "^1.1.0"
+        "minitsis-node": "^1.2.0"
     },
     "devDependencies": {
         "@types/jest": "^29.5.12",
@@ -35,13 +36,12 @@
         "ts-jest": "^29.1.2",
         "typescript": "~5.2.0",
         "minitsis-browser": "*",
-        "minitsis-node": "^1.1.0"
+        "minitsis-node": "^1.2.0"
     },
     "exports": {
         ".": {
-	    "import": "./dist/index.mjs",
-	    "require": "./dist/index.js"
-	}
-
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        }
     }
 }
