@@ -1,7 +1,6 @@
 // Assuming you have already translated minithesis functions and classes to TypeScript
 import {
   CachedTestFunction,
-  Database,
   Frozen,
   MapDB,
   Random,
@@ -26,9 +25,7 @@ import {
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import {DBWrapper} from './DBWrapper';
-
-import {IDataStore} from 'minitsis-datastore';
+import {DBWrapper, Database, IDataStore} from 'minitsis-datastore';
 import {BrowserDataStore} from 'minitsis-browser'
 import {NodeDataStore} from 'minitsis-node';
 

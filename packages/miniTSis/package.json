@@ -20,7 +20,11 @@
         "node": ">=14.14.0"
     },
     "dependencies": {
-        "minitsis-datastore": "*"
+        "minitsis-datastore": "^1.0.1"
+    },
+    "peerDependencies": {
+	"minitsis-browser": "*",
+        "minitsis-node": "^1.0.2"
     },
     "devDependencies": {
         "@types/jest": "^29.5.12",
@@ -32,7 +36,7 @@
         "ts-jest": "^29.1.2",
         "typescript": "~5.2.0",
 	"minitsis-browser": "*",
-        "minitsis-node": "^1.0.1"
+        "minitsis-node": "^1.0.2"
 
     }
 }

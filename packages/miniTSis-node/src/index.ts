@@ -5,7 +5,7 @@ export class NodeDataStore<U> implements IDataStore<U> {
   private db: Datastore<U>;
 
   constructor(private dbName: string) {
-    this.db = Datastore.create({filename: `${dbName}.db`, autoload: true});
+    this.db = Datastore.create({filename: `${dbName}`, autoload: true});
   }
 
   async set(key: string, value: U): Promise<void> {

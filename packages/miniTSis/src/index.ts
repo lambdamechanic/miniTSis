@@ -1,3 +1,7 @@
+
+
+import {Database} from 'minitsis-datastore';
+
 // Example porting of the TestCase class from Python to TypeScript
 // Note: This is a simplified version to illustrate the process. Full translation requires careful handling of all methods and properties.
 
@@ -652,11 +656,6 @@ export function nothing<T>(): Possibility<T> {
 
 // Implement DirectoryDB with Node.js's fs module or IndexedDB in browsers
 // Additional TypeScript translations for minithesis
-export interface Database {
-  set(key: string, value: Uint8Array): Promise<void>;
-  get(key: string): Promise<Uint8Array | null>;
-  delete(key: string): Promise<void>;
-}
 
 export class TestCase {
   prefix: bigint[];
