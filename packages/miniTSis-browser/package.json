@@ -7,10 +7,9 @@
     "files": [
         "dist/"
     ],
-
     "dependencies": {
         "minitsis-datastore": "^1.1.0",
-        "localforage": "*"
+	"localforage": "^1.10.0"
     },
     "scripts": {
         "build": "tsup src/index.ts --format cjs,esm --dts",
@@ -18,9 +17,9 @@
     },
     "exports": {
         ".": {
-	    "import": "./dist/index.mjs",
-	    "require": "./dist/index.js",
-	    "types": "./dist/index.d.ts"
-	}
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
     }
 }

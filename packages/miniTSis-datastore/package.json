@@ -14,10 +14,11 @@
         "pretest": "npm run compile"
     },
     "devDependencies": {
+        "tsup": "^8.0.2",
         "typescript": "~5.2.0"
     },
     "exports": {
-	"import": "./dist/index.mjs",
-	"require": "./dist/index.js"
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.js"
     }
 }
