@@ -1,6 +1,7 @@
 // Assuming you have already translated minithesis functions and classes to TypeScript
 import {
   CachedTestFunction,
+  DBWrapper,
   Frozen,
   MapDB,
   Random,
@@ -25,7 +26,7 @@ import {
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import {DBWrapper, Database, IDataStore} from 'minitsis-datastore';
+import {Database, IDataStore} from 'minitsis-datastore';
 import {BrowserDataStore} from 'minitsis-browser'
 import {NodeDataStore} from 'minitsis-node';
 
@@ -178,7 +179,7 @@ describe('Minithesis Tests', () => {
     });
 
     const run = async () => {
-      const db = new DBWrapper(createDataStore<string>(tempDirPath));
+      const db = new DBWrapper(createDataStore<string>(tempDirPath + "/db"));
       const testFn = (testCase: TestCase) => {
         count += 1;
         const choice = testCase.choice(BigInt(10000));
