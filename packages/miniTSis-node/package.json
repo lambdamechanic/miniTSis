@@ -1,10 +1,10 @@
 {
 
     "name": "minitsis-node",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "",
-    "main": "build/src/index.js",
-    "types": "build/src/index.d.ts",
+    "main": "build/index.js",
+    "types": "build/index.d.ts",
     "files": [
 	"build/"
     ],
