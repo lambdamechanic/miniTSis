@@ -11,8 +11,7 @@
     "keywords": [],
     "scripts": {
         "build": "tsup src/index.ts --format cjs,esm --dts",
-        "compile": "tsc",
-        "debug-tsc": "tsc --traceResolution",
+	"compile": "tsc",
         "prepare": "npm run compile",
         "pretest": "npm run compile"
     },
