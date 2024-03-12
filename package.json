@@ -12,13 +12,13 @@
     "devDependencies": {
         "@changesets/cli": "^2.27.1",
         "@types/node": "^20.11.25",
+        "changeset": "^0.2.6",
         "gts": "^5.2.0",
         "ts-node": "^10.9.2",
         "tsup": "^8.0.2"
     },
     "scripts": {
         "dev": "turbo run dev",
-	"publish-packages": "turbo run build lint test && changeset version && changeset publish"
-
+        "publish-packages": "turbo run build lint test && changeset version && changeset publish"
     }
 }

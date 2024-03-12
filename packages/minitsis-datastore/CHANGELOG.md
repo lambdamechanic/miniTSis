@@ -1,5 +1,23 @@
 # minitsis-datastore
 
+## 1.3.0
+
+### Minor Changes
+
+- packaging
+
+## 1.2.0
+
+### Minor Changes
+
+- packaging
+
+## 1.1.1
+
+### Patch Changes
+
+- packaging
+
 ## 1.2.0
 
 ### Minor Changes
