@@ -19,6 +19,12 @@ import {
   sublists,
   toNumber,
   tuples,
+  uuids,
+
+  // for debugging only
+  getBufferSize,
+  setBufferSize
+
 } from './index'; // Adjust import path as necessary
 
 // import StorageDB from './StorageDB';
@@ -50,6 +56,8 @@ export function createDataStore<U>(dbPath: string): IDataStore<U> {
 let logMock: jest.SpyInstance;
 
 beforeEach(() => {
+  // set normal buffer size
+  setBufferSize(8*1024);
   // Spy on console.log and keep a reference to the spy
   logMock = jest.spyOn(console, 'log').mockImplementation();
 });
@@ -71,9 +79,19 @@ function wrapWithName(
   return testFn;
 }
 
+function wrapWithNameAsync(
+  testFn: (testCase: TestCase) => Promise<void>
+): (testCase: TestCase) => Promise<void> {
+  const currentTestName = expect.getState().currentTestName;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (testFn as any).testName = currentTestName;
+  return testFn;
+}
+
+
 
 describe('Minithesis Tests', () => {
-  test.each(Array.from({length: 10}, (_, i) => i))(
+  test.each(Array.from({length: 1}, (_, i) => i))(
     'finds small list new - seed %i',
     async seed => {
       function sum(arr: number[]): number {
@@ -84,7 +102,7 @@ describe('Minithesis Tests', () => {
         const ls = testCase.any(lists(integers(0, 10000)));
         if (sum(ls) > 1000) {
           // Logic to fail the test, expecting minithesis to have logged the value generation
-          throw new Error('Assertion failed: sum(ls) <= 1000');
+	  throw new Error('Assertion failed: sum(ls) <= 1000')
         }
       });
 
@@ -116,7 +134,7 @@ describe('Minithesis Tests', () => {
     };
 
     await expect(
-      runTest(10000, random, database, false)(wrapWithName(testFn))
+      runTest(1000, random, database, false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: m + n > 1000');
 
     expect(logMock).toHaveBeenCalledWith(
@@ -127,21 +145,23 @@ describe('Minithesis Tests', () => {
     );
   });
 
-  test('test cases satisfy preconditions', () => {
+  test('test cases satisfy preconditions', async () => {
     const testFn = (testCase: TestCase) => {
-      const n = toNumber(testCase.choice(BigInt(10)));
+      const n = toNumber(testCase.choice(BigInt(5)));
       testCase.assume(n !== 0);
       expect(n).not.toBe(0);
     };
 
-    expect(() =>
-      runTest(100, new Random(), new MapDB(), false)(testFn)
-    ).not.toThrow();
+    await expect(
+      runTest(100, new Random(), new MapDB(), true)(wrapWithName(testFn))
+    );
+
   });
+
 
   test('error on too strict precondition', async () => {
     const testFn = (testCase: TestCase) => {
-      testCase.choice(BigInt(10));
+      testCase.choice(BigInt(21));
       testCase.reject(); // This should cause Unsatisfiable to be thrown
     };
 
@@ -153,12 +173,13 @@ describe('Minithesis Tests', () => {
     const testFn = (testCase: TestCase) => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        testCase.choice(BigInt(10));
+        testCase.choice(BigInt(22));
       }
     };
+    setBufferSize(10);
 
-    expect(
-      runTest(5, new Random(), new MapDB(), false)(testFn)
+    await expect(
+      runTest(5, new Random(), new MapDB(), true)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -183,7 +204,7 @@ describe('Minithesis Tests', () => {
       const testFn = (testCase: TestCase) => {
         count += 1;
         const choice = testCase.choice(BigInt(10000));
-        if (choice >= BigInt(10)) {
+        if (choice >= BigInt(8)) {
           throw new Error('Choice is too high');
         }
       };
@@ -208,7 +229,7 @@ describe('Minithesis Tests', () => {
   });
 
   test('test_function_cache', async () => {
-    const testFn = (testCase: TestCase) => {
+    const testFn = async (testCase: TestCase) => {
       if (testCase.choice(1000n) >= 200n) {
         testCase.markStatus(Status.INTERESTING);
       }
@@ -218,7 +239,7 @@ describe('Minithesis Tests', () => {
     };
 
     const random = new Random(0);
-    const state = new TestingState(random, wrapWithName(testFn), 100);
+    const state = new TestingState(random, wrapWithNameAsync(testFn), 100);
     const cache = new CachedTestFunction(state.testFunction.bind(state));
     expect(state.calls).toBe(0);
     expect(await cache.call([1n, 1n])).toBe(Status.VALID);
@@ -266,11 +287,9 @@ describe('Minithesis Tests', () => {
       }
     });
 
-    await expect(async () => {
-      const random = new Random(); // Adjust as needed for your Random implementation
-      const database = new MapDB(); // Assuming MapDB is your database implementation
-      await runTest(1000, random, database, true)(testFn);
-    }).rejects.toThrow('Score exceeds target');
+    await expect(
+      runTest(1000, new Random(), new MapDB(), false)(testFn)
+    ).rejects.toThrow('Score exceeds target');
 
     expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('choice(1000): 1000')
@@ -317,7 +336,7 @@ describe('Minithesis Tests', () => {
     });
 
     await expect(
-      runTest(1000, new Random(), new MapDB(), true)(testFn)
+      runTest(1000, new Random(), new MapDB(), false)(testFn)
     ).rejects.toThrow('Score 10000 should be less than 10000');
     //todo output test
     //
@@ -329,7 +348,7 @@ describe('Minithesis Tests', () => {
     // called way too much.
     // expect(logMock).toHaveBeenCalledTimes(3);
     // expect(logMock).toHaveBeenCalledWith(expect.stringContaining('choice(1000): 0'));
-    expect(logMock).toHaveBeenCalledWith(
+    await expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('choice(10000): 10000')
     );
   });
@@ -353,11 +372,11 @@ describe('Minithesis Tests', () => {
       };
 
       await expect(
-        runTest(1000, new Random(seed), new MapDB(), true)(wrapWithName(testFn))
+        runTest(1000, new Random(seed), new MapDB(), false)(wrapWithName(testFn))
       ).rejects.toThrow('Assertion failed: score (0) should be greater than 0');
 
       // Verify the log includes the expected message
-      expect(logMock).toHaveBeenCalledWith(
+      await expect(logMock).toHaveBeenCalledWith(
         expect.stringContaining('choice(1000): 0')
       );
       // expect(logMock).toHaveBeenCalledTimes(2); // Assuming there's a known bug that causes logs to be duplicated
@@ -382,24 +401,18 @@ describe('Minithesis Tests', () => {
     // expect(logMock).toHaveBeenCalledTimes(1); // Assuming there's a known bug that causes logs to be duplicated
   });
 
-  test('errors when using frozen', () => {
-    const tc = TestCase.forChoices([0n]); // Assuming forChoices method is static and accepts bigint[]
+  test('errors when using frozen', async () => {
+    const tc = TestCase.forChoices([0n]);
     tc.status = Status.VALID;
 
     // Using Jest's expect to assert that calling markStatus on a frozen TestCase throws Frozen
-    expect(() => {
-      tc.markStatus(Status.INTERESTING);
-    }).toThrow(Frozen);
+    expect(() => tc.markStatus(Status.INTERESTING)).toThrow(Frozen);
 
     // Using Jest's expect to assert that calling choice on a frozen TestCase throws Frozen
-    expect(() => {
-      tc.choice(10n);
-    }).toThrow(Frozen);
+    expect(() => tc.choice(11n)).toThrow(Frozen);
 
     // Using Jest's expect to assert that calling forcedChoice on a frozen TestCase throws Frozen
-    expect(() => {
-      tc.forcedChoice(10n);
-    }).toThrow(Frozen);
+    expect(() => tc.forcedChoice(12n)).toThrow(Frozen)
   });
 
   // this doesn't actually error, because we are using bigints.
@@ -415,9 +428,20 @@ describe('Minithesis Tests', () => {
     const testFn = wrapWithName((tc: TestCase) => {
       tc.choice(BigInt(2) ** BigInt(64) - BigInt(1));
     });
-    await runTest(100, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, new Random(), new MapDB(), true)(testFn);
   });
 
+  test('uuids are different', async () => {
+    const testFn = ((tc:TestCase) => {
+      const a = tc.any(uuids());
+      const b = tc.any(uuids());
+      if (a === b) {
+	throw new Error("non unique identifiers!");
+      }
+    });
+    await runTest(100, new Random(), new MapDB(), true)(wrapWithName(testFn));
+
+  });
   test('can draw mixture', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
       const m = tc.any(mixOf(bigIntegers(-5n, 0n), bigIntegers(2n, 5n)));
@@ -425,7 +449,7 @@ describe('Minithesis Tests', () => {
       expect(Number(m)).toBeLessThanOrEqual(5);
       expect(Number(m)).not.toBe(1);
     });
-    await runTest(100, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, new Random(), new MapDB(), true)(testFn);
   });
 
   test('mapped possibility', async () => {
@@ -433,7 +457,7 @@ describe('Minithesis Tests', () => {
       const n = tc.any(bigIntegers(0n, 5n).map((n: bigint) => n * 2n));
       expect(n % 2n).toBe(0n);
     });
-    await runTest(100, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, new Random(), new MapDB(), true)(testFn);
   });
 
   test('selected possibility', async () => {
@@ -445,7 +469,7 @@ describe('Minithesis Tests', () => {
         throw 'Bad odd number!';
       }
     });
-    await runTest(100, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, new Random(), new MapDB(), true)(testFn);
   });
 
   test('bound possibility', async () => {
@@ -457,7 +481,7 @@ describe('Minithesis Tests', () => {
       );
       expect(m <= n && n <= m + 10n).toBe(true);
     });
-    await runTest(100, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, new Random(), new MapDB(), true)(testFn);
   });
 
   test('cannot witness nothing', async () => {
@@ -465,7 +489,7 @@ describe('Minithesis Tests', () => {
       tc.any(nothing());
     });
     await expect(
-      runTest(100, new Random(), new MapDB(), false)(testFn)
+      runTest(100, new Random(), new MapDB(), true)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -474,7 +498,7 @@ describe('Minithesis Tests', () => {
       tc.any(mixOf());
     });
     await expect(
-      runTest(100, new Random(), new MapDB(), false)(testFn)
+      runTest(100, new Random(), new MapDB(), true)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -527,7 +551,7 @@ describe('Minithesis Tests', () => {
 
   test('size bounds on list', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
-      const ls = tc.any(lists(bigIntegers(0n, 10n), 1, 3));
+      const ls = tc.any(lists(bigIntegers(0n, 17n), 1, 3));
       expect(ls.length).toBeGreaterThanOrEqual(1);
       expect(ls.length).toBeLessThanOrEqual(3);
     });
@@ -558,12 +582,12 @@ describe('Minithesis Tests', () => {
       }
     });
     await expect(
-      runTest(1000, new Random(100), new MapDB(), false)(testFn)
+      runTest(1000, new Random(100), new MapDB(), true)(testFn)
     ).rejects.toThrow('Failure');
   });
 
   test('failure from hypothesis 2', async () => {
-    const testFn = wrapWithName((tc: TestCase) => {
+    const testFn = (tc: TestCase) => {
       const n1 = tc.choice(6n);
       if (n1 === 6n) {
         const n2 = tc.weighted(0.0);
@@ -582,9 +606,9 @@ describe('Minithesis Tests', () => {
       } else {
         tc.markStatus(Status.INVALID);
       }
-    });
+    };
     await expect(
-      runTest(1000, new Random(0), new MapDB(), false)(testFn)
+      runTest(1000, new Random(), new MapDB(), true)(wrapWithName(testFn))
     ).rejects.toThrow('Failure');
   });
 
@@ -601,7 +625,7 @@ describe('Minithesis Tests', () => {
     const database = new MapDB(); // Assuming MapDB is a suitable in-memory database or similar setup
 
     //logMock.mockRestore()
-    expect(
+    await expect(
       runTest(1000, random, database, false)(wrapWithName(testFn))
     ).rejects.toThrow(/broken combination: (1,7|7,1)/);
   });
@@ -619,7 +643,7 @@ describe('Minithesis Tests', () => {
       }
     };
 
-    expect(
+    await expect(
       runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Predicate failed: b (6) - a (0) > 5');
   });

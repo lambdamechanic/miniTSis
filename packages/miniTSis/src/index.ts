@@ -1,6 +1,5 @@
-
+import {v4 as uuidv4} from 'uuid';
 import {Database,IDataStore} from 'minitsis-datastore';
-
 // Example porting of the TestCase class from Python to TypeScript
 // Note: This is a simplified version to illustrate the process. Full translation requires careful handling of all methods and properties.
 
@@ -19,7 +18,15 @@ export enum Status {
 // # We cap the maximum amount of entropy a test case can use.
 // # This prevents cases where the generated test case size explodes
 // # by effectively rejection
-const BUFFER_SIZE = 8 * 1024;
+let BUFFER_SIZE = 8 * 1024;
+
+export function setBufferSize(n) {
+  BUFFER_SIZE = n;
+}
+
+export function getBufferSize(n) {
+  BUFFER_SIZE = n;
+}
 
 export class Unsatisfiable extends Error {}
 export class StopTest extends Error {}
@@ -73,7 +80,7 @@ export class Possibility<T> {
 
 export class TestingState {
   random: Random;
-  testFunctionCallback: (testCase: TestCase) => void;
+  testFunctionCallback: (testCase: TestCase) => Promise<void>;
   maxExamples: number;
   validTestCases: number;
   calls: number;
@@ -83,7 +90,7 @@ export class TestingState {
 
   constructor(
     random: Random,
-    testFunction: (testCase: TestCase) => void,
+    testFunction: (testCase: TestCase) => Promise<void>,
     maxExamples: number
   ) {
     this.random = random;
@@ -93,7 +100,7 @@ export class TestingState {
     this.validTestCases = 0;
   }
 
-  public testFunction(testCase: TestCase): void {
+  public async testFunction(testCase: TestCase): Promise<void> {
     if (!this) {
       throw new Error('selfless');
     }
@@ -101,7 +108,7 @@ export class TestingState {
     //    console.log("in testFunction, calls=", this.calls, " validTestCases=", this.validTestCases);
 
     try {
-      this.testFunctionCallback(testCase);
+      await this.testFunctionCallback(testCase);
     } catch (error) {
       if (!(error instanceof StopTest)) {
         throw error;
@@ -166,7 +173,7 @@ export class TestingState {
       }
       const attempt = choices.slice(); // Clone array
       attempt[i] += step;
-      const testCase = new TestCase(attempt, this.random, attempt.length); // Adjust as needed
+      const testCase = new TestCase(attempt, this.random, BUFFER_SIZE);
 
       await this.testFunction(testCase); // Ensure testFunction handles async correctly
       if (testCase.status === undefined) {
@@ -213,15 +220,15 @@ export class TestingState {
 
   async run(): Promise<void> {
     //console.log("toplevel generate");
-    this.generate();
+    await this.generate();
     //console.log("toplevel target");
     await this.target();
     // console.log("toplevel shrink");
-    this.shrink();
+    await this.shrink();
     // console.error("toplevel done!");
   }
 
-  generate(): void {
+  async generate(): Promise<void> {
     while (
       this.shouldKeepGenerating() &&
       (this.bestScoring === undefined ||
@@ -229,26 +236,26 @@ export class TestingState {
     ) {
       //console.log(`generate loop: valid:${this.validTestCases} max:${this.maxExamples} bestScoring:${this.bestScoring}`);
       const testCase = new TestCase([], this.random, BUFFER_SIZE);
-      this.testFunction(testCase);
+      await this.testFunction(testCase);
     }
     // console.log("finished generating");
   }
 
-  shrink(): void {
+  async shrink(): Promise<void> {
     if (!this.result) {
       return;
     }
 
     const cached = new CachedTestFunction(this.testFunction.bind(this));
 
-    const consider = (choices: bigint[]): boolean => {
+    const consider = async (choices: bigint[]): Promise<boolean> => {
       if (bigintArraysEqual(choices, this.result)) {
         return true;
       }
-      return cached.call(choices) === Status.INTERESTING;
+      return ((await cached.call(choices)) === Status.INTERESTING);
     };
 
-    if (!consider(this.result)) {
+    if (! await consider(this.result)) {
       throw new Error('current result inconsiderable');
     }
 
@@ -269,7 +276,7 @@ export class TestingState {
           if (!consider(attempt)) {
             if (i > 0 && attempt[i - 1] > 0) {
               attempt[i - 1]--;
-              if (consider(attempt)) {
+              if (await consider(attempt)) {
                 i++;
               }
             }
@@ -278,7 +285,7 @@ export class TestingState {
         }
       }
 
-      const replace = (values: {[key: number]: bigint}): boolean => {
+      const replace = async (values: {[key: number]: bigint}): Promise<boolean> => {
         if (!this.result) {
           throw new Error('should have a result here');
         }
@@ -293,13 +300,13 @@ export class TestingState {
         // console.log(`lengths   ${attempt.length} and result ${this.result.length}`)
         // console.log(`attempt is ${attempt}`);
         // console.log(`result is ${this.result}`);
-        return consider(attempt);
+        return await consider(attempt);
       };
 
       for (let k = 8; k > 1; k /= 2) {
         for (let i = this.result.length - k; i >= 0; i--) {
           if (
-            replace(
+            await replace(
               Object.fromEntries(
                 Array.from({length: k}, (_, idx) => [i + idx, BigInt(0)])
               )
@@ -313,8 +320,8 @@ export class TestingState {
       }
 
       for (let i = this.result.length - 1; i >= 0; i--) {
-        binSearchDown(BigInt(0), this.result[i], (v: bigint) =>
-          replace({[i]: v})
+        await binSearchDown(BigInt(0), this.result[i], async (v: bigint) =>
+          await replace({[i]: v})
         );
       }
       // First try deleting chunks of choices
@@ -327,7 +334,7 @@ export class TestingState {
             ...this.result.slice(0, i),
             ...this.result.slice(i + k),
           ];
-          consider(attempt);
+          await consider(attempt);
         }
       }
 
@@ -344,7 +351,7 @@ export class TestingState {
           for (let j = i; j < i + k; j++) {
             attempt[j] = BigInt(0); // Reset chunk to zeroes
           }
-          consider(attempt);
+          await consider(attempt);
         }
       }
 
@@ -355,15 +362,15 @@ export class TestingState {
           if (j < this.result.length) {
             // Try swapping out of order pairs
             if (this.result[i] > this.result[j]) {
-              replace({[i]: this.result[j], [j]: this.result[i]});
+              await replace({[i]: this.result[j], [j]: this.result[i]});
             }
             // Adjust nearby pairs by redistributing value
             if (j < this.result.length && this.result[i] > BigInt(0)) {
               const previousI = this.result[i];
               const previousJ = this.result[j];
-              binSearchDown(BigInt(0), previousI, (v: bigint) => {
+              await binSearchDown(BigInt(0), previousI, async (v: bigint) => {
                 // Attempt to replace the value at i with v and adjust j accordingly
-                return replace({
+                return await replace({
                   [i]: v,
                   [j]: previousJ + (previousI - v),
                 });
@@ -384,9 +391,22 @@ export class TestingState {
     );
   }
 }
+type ChoiceMap = Map<bigint, ChoiceMap | Status>;
 
+function serializeChoiceMap(choiceMap: ChoiceMap): any {
+  const obj = {};
+  for (const [key, value] of choiceMap) {
+    if (value instanceof Map) {
+      obj[key.toString()] = serializeChoiceMap(value); // Recursively serialize nested ChoiceMaps
+    } else {
+      // For enum values, you might want to store them in a distinguishable way
+      obj[key.toString()] = value;
+    }
+  }
+  return obj;
+}
 export class CachedTestFunction {
-  private testFunction: (testCase: TestCase) => void;
+  private testFunction: (testCase: TestCase) => Promise<void>;
   // Using Map to represent a tree structure
   // this could be done better with something like
 
@@ -399,84 +419,167 @@ export class CachedTestFunction {
 
   // for now though:
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private tree: Map<number, any> = new Map();
+  private tree: ChoiceMap;
 
-  constructor(testFunction: (testCase: TestCase) => void) {
-    this.testFunction = tc => {
-      return testFunction(tc);
+  constructor(testFunction: (testCase: TestCase) => Promise<void>) {
+    this.testFunction = async tc => {
+      return await testFunction(tc);
     };
+    this.tree = new Map();
   }
 
-  public call(choices: bigint[]): Status {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let node: any = this.tree; // Start at the root of the tree
+
+
+  public async call(choices: bigint[]): Promise<Status> {
+    let node: ChoiceMap = this.tree; // Assuming `this.tree` is of type ChoiceMap
+    let maybeNode : ChoiceMap | Status;
+
+    let hitEnd = false;
     for (const c of choices) {
-      node = node.get(c);
-      if (node === undefined) {
-        break;
+      maybeNode = node.get(c);
+      if (maybeNode === undefined) {
+	hitEnd = true;
+	break;
       }
-      // If we encounter a Status value, it means we've previously computed this path
-      if (Object.values(Status).includes(node)) {
-        // Asserting that it's not OVERRUN just for validation, similar to the original Python
-        if (node === Status.OVERRUN)
-          throw new Error('Unexpected overrun status');
-        return node;
+      if (maybeNode instanceof Map) {
+	node = maybeNode;
+      } else {
+	if (maybeNode === Status.OVERRUN) {
+	  throw new Error("Unexpected overrun");
+	}
+	return maybeNode as Status;
       }
     }
-    // equivalent to a KeyError in python
-    if (node !== undefined && !Object.values(Status).includes(node)) {
-      return Status.OVERRUN;
-    }
+    if (!hitEnd) { return Status.OVERRUN ; }
 
-    //console.log("past choices", JSON.stringify(choices.map((a) => toNumber(a))));
-
-    // Correctly use the static forChoices method to create a new TestCase
     const testCase = TestCase.forChoices(choices);
-    // console.log("testcase from choices", testCase);
-    //console.log("re-entering testFunction", testCase);
-    this.testFunction(testCase);
-    // console.log("after testfunction");
+    await this.testFunction(testCase);
+
     if (testCase.status === undefined)
       throw new Error('Test case did not set a status');
 
-    // Re-traverse the choices to update the tree with the new outcome
+    // Reset node to the root to update the tree with the new outcome
     node = this.tree;
     choices.forEach((c, i) => {
-      // console.log("choices: " + JSON.stringify({c,i}));
       if (i + 1 < choices.length || testCase.status === Status.OVERRUN) {
-        if (!node.has(c)) {
-          node.set(c, new Map());
-        }
-        node = node.get(c);
+	maybeNode = node.get(c);
+	if (maybeNode === undefined) {
+	  const newNode = new Map();
+	  node.set(c,newNode);
+	  node = newNode;
+	} else {
+	  // we have a valid node. if it's a map, we're good. if it's a status, we have done something terribly wrong
+	  // and should blow uf as fast as possible.
+	  if (maybeNode instanceof Map) {
+	    //phew.
+	    node = maybeNode;
+	  } else {
+	    console.warn(`got a bit weird c:${c}, i:${i}, choices:${choices},
+                ${JSON.stringify({tree: serializeChoiceMap(this.tree)
+                                 ,node: serializeChoiceMap(node)})}`);
+	    // possibly this should cut off the iteration as well?
+	    return;
+	  }
+	}
       } else {
-        // For the last choice or when status is OVERRUN, set the status
-        node.set(c, testCase.status);
+	node.set(c, testCase.status);
       }
-    });
-
+    })
     return testCase.status;
   }
 }
+//   public async call(choices: bigint[]): Promise<Status> {
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     let node: any = this.tree; // Start at the root of the tree
+//     for (const c of choices) {
+//       node = node.get(c);
+//       if (node === undefined) {
+//         break;
+//       }
+//       // If we encounter a Status value, it means we've previously computed this path
+//       if (Object.values(Status).includes(node)) {
+//         // Asserting that it's not OVERRUN just for validation, similar to the original Python
+//         if (node === Status.OVERRUN)
+//           throw new Error('Unexpected overrun status');
+//         return node;
+//       }
+//     }
+//     // equivalent to a KeyError in python
+//     if (node !== undefined && !Object.values(Status).includes(node)) {
+//       return Status.OVERRUN;
+//     }
+
+//     //console.log("past choices", JSON.stringify(choices.map((a) => toNumber(a))));
+
+//     // Correctly use the static forChoices method to create a new TestCase
+//     const testCase = TestCase.forChoices(choices);
+//     // console.log("testcase from choices", testCase);
+//     //console.log("re-entering testFunction", testCase);
+//     await this.testFunction(testCase);
+//     // console.log("after testfunction");
+//     if (testCase.status === undefined)
+//       throw new Error('Test case did not set a status');
+
+//     // Re-traverse the choices to update the tree with the new outcome
+//     node = this.tree;
+//     choices.forEach((c, i) => {
+//       // console.log("choices: " + JSON.stringify({c,i}));
+//       if (i + 1 < choices.length || testCase.status === Status.OVERRUN) {
+//         if (!node.has(c)) {
+//           node.set(c, new Map());
+//         } else {
+//           node = node.get(c);
+// 	}
+//       } else {
+//         // For the last choice or when status is OVERRUN, set the status
+// 	console.warn(`node:${node}, c:${c}, i:${i}, choices:${choices}`);
+//         node.set(c, testCase.status);
+//       }
+//     });
+
+//     return testCase.status;
+//   }
+// }
+
 
 export function runTest(
   maxExamples = 100,
   random?: Random,
-  database?: Database, // Assume Database interface/type is defined elsewhere
+  database?: Database, // Assume Database interface/type is defined elsewhere.
   quiet = false
 ): (test: (testCase: TestCase) => void) => Promise<void> {
-  return async (test: (testCase: TestCase) => void) => {
-    const markFailuresInteresting = (testCase: TestCase): void => {
+  return (test: (testCase: TestCase) => void) => {
+    // Wrap the synchronous test function in an async function.
+    const asyncTestWrapper = async (testCase: TestCase): Promise<void> => {
+      // Simply invoke the original test function. Since it's synchronous,
+      // we don't need to await it, but we're in an async function, so it's okay.
+      test(testCase);
+    };
+
+    (asyncTestWrapper as any).testName = (test as any).testName;
+    // Now invoke runTestAsync with the wrapped test function.
+    // runTestAsync expects a function that returns a Promise, which asyncTestWrapper does.
+    return runTestAsync(maxExamples, random, database, quiet)(asyncTestWrapper);
+  };
+}
+
+export function runTestAsync(
+  maxExamples = 100,
+  random?: Random,
+  database?: Database, // Assume Database interface/type is defined elsewhere
+  quiet = false
+): (test: (testCase: TestCase) => Promise<void>) => Promise<void> {
+  return async (test: (testCase: TestCase) => Promise<void>) => {
+    const markFailuresInteresting = async (testCase: TestCase): Promise<void> => {
       // console.log("markFailuresInteresting", testCase);
       try {
-        test(testCase);
+	// console.log("asking", testCase);
+        await test(testCase);
       } catch (error) {
         //	console.log("markFailuresInterestingError: case", testCase);
-        //	console.log("markFailuresInterestingError: error", error);
         if (testCase.status !== undefined) {
-          //	  console.log("markFailuersINteresting: status is not undefined");
           throw error;
         } else {
-          //	  console.log("markFailuersINteresting: status is undefined");
         }
         testCase.markStatus(Status.INTERESTING);
       }
@@ -513,7 +616,7 @@ export function runTest(
         'choices from previous failure',
         choices.map(a => toNumber(a))
       );
-      state.testFunction(TestCase.forChoices(choices, !quiet));
+      await state.testFunction(TestCase.forChoices(choices, !quiet));
     }
     //     console.log("state is", state);
     if (state.result === undefined) {
@@ -521,7 +624,6 @@ export function runTest(
     }
 
     if (state.validTestCases === 0) {
-      console.log('unsatisfiable');
       throw new Unsatisfiable();
     }
 
@@ -547,11 +649,17 @@ export function runTest(
       //      console.log(`running test again i guess? state.result=${state.result}`);
       const newTestCase: TestCase = TestCase.forChoices(state.result, !quiet);
 
-      //      console.log(`new test case=${newTestCase}`);
-      test(newTestCase);
+      // console.log(`new test case=${state.result}`);
+      await test(newTestCase);
       //       console.log("finished test");
     }
   };
+}
+
+export function uuids() : Possibility<string> {
+  return new Possibility<string>((testCase:TestCase) => {
+    return uuidv4();
+  })
 }
 
 export function integers(min: number, max: number): Possibility<number> {
@@ -670,7 +778,7 @@ export class TestCase {
     prefix: bigint[],
     random?: Random,
     maxSize = Infinity,
-    printResults = true
+    printResults = false
   ) {
     this.prefix = prefix;
     // XXX Need a cast because below we assume self.random is not None;
@@ -755,7 +863,7 @@ export class TestCase {
       throw new Error('selfless possibility on any');
     }
 
-    // console.error(`entering any with this ${this} and ${possibility}`);
+//    console.error(`entering any with this ${this} and ${possibility} at ${this.depth}`);
     let result: U;
     try {
       this.depth += 1;
@@ -763,12 +871,14 @@ export class TestCase {
       result = possibility.produce(this);
       //console.log("possibility production", result);
     } finally {
-      // console.log("exiting any at depth", this.depth);
       this.depth -= 1;
     }
+    //console.warn(`exiting any with [${result}] and ${possibility} at ${this.depth}: printable: ${this.shouldPrint()}`);
     if (this.shouldPrint()) {
+      //console.warn(`any(${possibility}): [${result}]`);
       console.log(`any(${possibility}): [${result}]`);
     }
+
     return result;
   }
 
@@ -859,17 +969,17 @@ export class MapDB implements Database {
   }
 }
 
-export function binSearchDown(
+export async function binSearchDown(
   lo: bigint,
   hi: bigint,
-  f: (n: bigint) => boolean
-): bigint {
-  if (f(lo)) {
+  f:  (n: bigint) => Promise<boolean>
+): Promise<bigint> {
+  if (await f(lo)) {
     return lo;
   }
   while (lo + BigInt(1) < hi) {
     const mid = lo + (hi - lo) / BigInt(2);
-    if (f(mid)) {
+    if (await f(mid)) {
       hi = mid;
     } else {
       lo = mid;
