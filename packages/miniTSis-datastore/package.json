@@ -1,14 +1,14 @@
 {
     "name": "minitsis-datastore",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "description": "",
-    "main": "build/index.js",
-    "types": "build/index.d.ts",
-
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
     "license": "Apache-2.0",
     "keywords": [],
     "scripts": {
-	"build": "tsc --build",
+        "build": "tsup src/index.ts --format cjs,esm --dts",
         "compile": "tsc",
         "prepare": "npm run compile",
         "pretest": "npm run compile"
@@ -17,6 +17,7 @@
         "typescript": "~5.2.0"
     },
     "exports": {
-	".": "./src/index.ts"
+	"import": "./dist/index.mjs",
+	"require": "./dist/index.js"
     }
 }

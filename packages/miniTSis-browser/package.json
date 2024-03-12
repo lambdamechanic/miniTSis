@@ -1,16 +1,26 @@
 {
     "name": "minitsis-browser",
-    "version": "1.0.0",
-    "dependencies": {
-	"minitsis-datastore": "^1.0.0",
-	"localforage": "*"
+    "version": "1.1.0",
+    "main": "dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist/"
+    ],
 
+    "dependencies": {
+        "minitsis-datastore": "^1.1.0",
+        "localforage": "*"
     },
     "scripts": {
-	"build" : "tsc --build",
-	"compile": "tsc"
+        "build": "tsup src/index.ts --format cjs,esm --dts",
+        "compile": "tsc"
     },
     "exports": {
-	".": "./src/index.ts"
+        ".": {
+	    "import": "./dist/index.mjs",
+	    "require": "./dist/index.js",
+	    "types": "./dist/index.d.ts"
+	}
     }
 }

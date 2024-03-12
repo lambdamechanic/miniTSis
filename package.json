@@ -10,10 +10,15 @@
         "typescript": "^5.4.2"
     },
     "devDependencies": {
+        "@changesets/cli": "^2.27.1",
         "@types/node": "^20.11.25",
-        "ts-node": "^10.9.2"
+        "gts": "^5.2.0",
+        "ts-node": "^10.9.2",
+        "tsup": "^8.0.2"
     },
     "scripts": {
-	"build": "tsc --build --verbose"
+        "dev": "turbo run dev",
+	"publish-packages": "turbo run build lint test && changeset version && changeset publish"
+
     }
 }
