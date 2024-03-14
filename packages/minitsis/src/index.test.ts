@@ -548,7 +548,6 @@ describe('Minithesis Tests', () => {
 
 
       if (m.includes(93)) {
-	console.warn(m);
 	throw new Error(`Failure: length (${m.length})`);
       }
     };
@@ -683,4 +682,4 @@ describe('Minithesis Tests', () => {
       runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Predicate failed: b (6) - a (0) > 5');
   });
-});
+  });
