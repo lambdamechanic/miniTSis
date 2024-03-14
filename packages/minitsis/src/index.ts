@@ -736,13 +736,13 @@ export function lists<T>(
     let continueLoop = true;
     while (continueLoop) {
       if (result.length < minSize) {
-        console.log('forced choice 1');
+        // console.log('forced choice 1');
         testCase.forcedChoice(BigInt(1));
 
         // maxSize isn't _always_ Infinity
         // eslint-disable-next-line no-constant-condition
       } else if (result.length + 1 >= maxSize) {
-        console.log('forced choice 0');
+        // console.log('forced choice 0');
         testCase.forcedChoice(BigInt(0));
         continueLoop = false;
       } else {
@@ -874,7 +874,7 @@ export class TestCase {
     if (this.choices.length >= this.maxSize) {
       this.markStatus(Status.OVERRUN);
     }
-    console.log(`pushing ${n} onto choices`);
+    // console.log(`pushing ${n} onto choices`);
     this.choices.push(n);
     return n;
   }
