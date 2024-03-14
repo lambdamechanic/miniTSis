@@ -263,7 +263,8 @@ export class TestingState {
     while (prev === undefined || !bigintArraysEqual(prev, this.result)) {
       prev = this.result ? [...this.result] : [];
 
-      for (let k = 8; k > 0; k /= 2) {
+      //      for (let k = 8; k > 0; k /= 2) {
+      for (let k = this.result.length; k > 0; k -=1) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
           if (i >= this.result.length) {
             i--;
@@ -303,7 +304,8 @@ export class TestingState {
         return await consider(attempt);
       };
 
-      for (let k = 8; k > 1; k /= 2) {
+      for (let k = this.result.length; k > 0; k -=1) {
+	//for (let k = 8; k > 1; k /= 2) {
         for (let i = this.result.length - k; i >= 0; i--) {
           if (
             await replace(
@@ -325,7 +327,8 @@ export class TestingState {
         );
       }
       // First try deleting chunks of choices
-      for (let k = 8; k > 0; k /= 2) {
+      for (let k = this.result.length; k > 0; k -=1) {
+	//for (let k = 8; k > 0; k /= 2) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
           if (this.result === undefined) {
             throw new Error('never undefined here');
@@ -339,7 +342,8 @@ export class TestingState {
       }
 
       // Try replacing blocks of choices with zeroes, then adjust for smaller values
-      for (let k = 8; k >= 1; k /= 2) {
+      for (let k = this.result.length; k > 0; k -=1) {
+	// for (let k = 8; k >= 1; k /= 2) {
         if (this.result === undefined) {
           throw new Error('never undefined here');
         }
