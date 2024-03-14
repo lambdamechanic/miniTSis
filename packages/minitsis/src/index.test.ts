@@ -535,6 +535,42 @@ describe('Minithesis Tests', () => {
     ).rejects.toThrow('Failure in choice(1)');
   });
 
+  test('lists get shrunk eventually', async () => {
+    const testFn = (tc: TestCase) => {
+      // intent is to see if we can properly shrink the original list down.
+      const m = tc.any(lists(integers(0, 100))
+	.bind((n) =>
+	  lists(integers(0,40))
+	    .map((o) => [...o,...n,...o]))
+	.bind((p) =>
+	  lists(integers(0,40))
+	    .map((o) => [...o,...p,...o])));
+
+
+      if (m.includes(93)) {
+	console.warn(m);
+	throw new Error(`Failure: length (${m.length})`);
+      }
+    };
+    await expect(
+      runTest(1000, new Random(), new MapDB(), false)(wrapWithName(testFn))
+    ).rejects.toThrow("Failure: length (1)");
+  });
+
+  test('integers respects minimum', async () => {
+    const testFn = (tc: TestCase) =>  {
+      const n = tc.any(integers(1, 50));
+      const m = tc.any(integers(n, 100));
+      if (m < n) {
+	throw new Error('Failure in integers(1, 100)');
+      }
+    };
+    await expect(
+      runTest(10000, new Random(), new MapDB(), false)(wrapWithName(testFn))
+    );
+  });
+
+
   test('guaranteed weighted', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
       if (tc.weighted(1.0)) {
