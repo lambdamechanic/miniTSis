@@ -393,6 +393,28 @@ export class TestingState {
 }
 type ChoiceMap = Map<bigint, ChoiceMap | Status>;
 
+// Function to create a "fake" ChoiceMap that throws when `.get` is called
+function createFakeChoiceMap(): ChoiceMap {
+  const handler = {
+    get(target: any, prop: PropertyKey, receiver: any): any {
+      if (prop === 'get') {
+        return function() {
+	  // https://github.com/lambdamechanic/miniTSis/issues/1
+          // throw new Error("'.get' method was called on a fake ChoiceMap");
+        };
+      } else if (prop === 'set') {
+	return function(a) { return undefined };
+      }
+
+      return Reflect.get(target, prop, receiver);
+    }
+  };
+
+  const fakeMap = new Map<bigint, ChoiceMap | Status>();
+  const proxy = new Proxy(fakeMap, handler);
+  return proxy as ChoiceMap;
+}
+
 function serializeChoiceMap(choiceMap: ChoiceMap): any {
   const obj = {};
   for (const [key, value] of choiceMap) {
@@ -474,11 +496,21 @@ export class CachedTestFunction {
 	    //phew.
 	    node = maybeNode;
 	  } else {
-	    console.warn(`got a bit weird c:${c}, i:${i}, choices:${choices},
-                ${JSON.stringify({tree: serializeChoiceMap(this.tree)
-                                 ,node: serializeChoiceMap(node)})}`);
+	    // in this case, there's no point setting the node.
+	    // we must be at the end of the tree, otherwise it would
+	    // fail the next time, and i've never seen that happen.
+	    //
+	    // originial minithesis plays a bit fast and loose with types,
+	    // so it isn't statically required to be a Map here.
+	    // we are going to be a bit more careful and at least assert that it doesn't get called again.
+	    //
+	    node = createFakeChoiceMap();
+
+
+	    // console.warn(`got a bit weird c:${c}, i:${i}, choices:${choices},
+            //     ${JSON.stringify({tree: serializeChoiceMap(this.tree)
+            //                      ,node: serializeChoiceMap(node)})}`);
 	    // possibly this should cut off the iteration as well?
-	    return;
 	  }
 	}
       } else {
