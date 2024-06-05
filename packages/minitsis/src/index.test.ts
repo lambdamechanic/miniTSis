@@ -16,6 +16,7 @@ import {
   mixOf,
   nothing,
   runTest,
+  runTestAsync,
   sublists,
   toNumber,
   tuples,
@@ -555,6 +556,34 @@ describe('Minithesis Tests', () => {
       runTest(1000, new Random(), new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow("Failure: length (1)");
   });
+function wrapWithNameAsync(
+  testFn: (testCase: TestCase) => Promise<void>
+): (testCase: TestCase) => Promise<void> {
+  // const currentTestName = expect.getState().currentTestName;
+  const currentTestName = "hardcodedOracleTest";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (testFn as any).testName = currentTestName;
+  return testFn;
+}
+
+
+
+
+
+  test('alertOnFailure is called', async () => {
+    const testFn = wrapWithNameAsync(async (tc: TestCase) => {
+      const m = tc.any(integers(1,2));
+      throw new Error("always fail");
+    });
+    await expect(
+      runTestAsync(100, new Random(), new MapDB(), false,
+		   (async (testCase) => {
+		     throw new Error("QUITTING MESSILY");
+		   })
+		  )(testFn)
+    ).rejects.toThrow("QUITTING MESSILY");
+  });
+
 
   test('integers respects minimum', async () => {
     const testFn = (tc: TestCase) =>  {
@@ -661,7 +690,7 @@ describe('Minithesis Tests', () => {
 
     //logMock.mockRestore()
     await expect(
-      runTest(1000, random, database, false)(wrapWithName(testFn))
+      runTest(5000, random, database, false)(wrapWithName(testFn))
     ).rejects.toThrow(/broken combination: (1,7|7,1)/);
   });
 

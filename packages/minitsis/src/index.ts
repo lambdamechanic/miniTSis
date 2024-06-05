@@ -91,7 +91,8 @@ export class TestingState {
   constructor(
     random: Random,
     testFunction: (testCase: TestCase) => Promise<void>,
-    maxExamples: number
+    maxExamples: number,
+    alertOnNewBest?: (testCase: TestCase) => Promise<void>
   ) {
     this.random = random;
     this.testFunctionCallback = testFunction;
@@ -152,8 +153,10 @@ export class TestingState {
         // sorting keys don't work so well in typescript.
         smallerThan(testCase.choices, this.result))
     ) {
-      // console.info(`choices ${testCase.choices} is better than ${this.result}`);
       this.result = testCase.choices;
+      await alertOnFailureSingleton(testCase);
+      // console.info(`choices ${testCase.choices} is better than ${this.result}`);
+
     }
   }
 
@@ -599,13 +602,25 @@ export function runTest(
   };
 }
 
+
+let alertOnFailureSingleton;
+
 export function runTestAsync(
   maxExamples = 100,
   random?: Random,
   database?: Database, // Assume Database interface/type is defined elsewhere
-  quiet = false
+  quiet = false,
+  alertOnFailure?  : (testCase: TestCase) => Promise<void>,
 ): (test: (testCase: TestCase) => Promise<void>) => Promise<void> {
-  return async (test: (testCase: TestCase) => Promise<void>) => {
+  if (alertOnFailure !== undefined) {
+    // set naughty global singleton.
+    alertOnFailureSingleton=alertOnFailure;
+  } else {
+    alertOnFailureSingleton= async (testCase: TestCase) => {
+      return ;
+    }
+  }
+  const ret = async (test: (testCase: TestCase) => Promise<void>) => {
     const markFailuresInteresting = async (testCase: TestCase): Promise<void> => {
       // console.log("markFailuresInteresting", testCase);
       try {
@@ -679,17 +694,13 @@ export function runTestAsync(
 
       // Create a Uint8Array from the buffer
       const uint8Array = new Uint8Array(buffer);
-      // console.log(`setting ${test.name} to buffer ${uint8Array}`);
       // Set the Uint8Array in the database
       await db.set(testName, uint8Array);
-      //      console.log(`running test again i guess? state.result=${state.result}`);
       const newTestCase: TestCase = TestCase.forChoices(state.result, !quiet);
-
-      // console.log(`new test case=${state.result}`);
       await test(newTestCase);
-      //       console.log("finished test");
     }
   };
+  return ret;
 }
 
 export function uuids() : Possibility<string> {
