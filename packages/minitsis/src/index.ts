@@ -578,7 +578,7 @@ export class CachedTestFunction {
 
 
 export function runTest(
-  maxExamples = 100,
+  maxExamples,
   seed : number,
   database?: Database, // Assume Database interface/type is defined elsewhere.
   quiet = false
@@ -604,9 +604,9 @@ let alertOnFailureSingleton;
 export function runTestAsync(
   maxExamples : number = 100,
   seed: number,
-  database?: Database, // Assume Database interface/type is defined elsewhere
+  database?: Database,
   quiet = false,
-  alertOnFailure?  : (testCase: TestCase) => Promise<void>,
+  alertOnFailure?  : (testCase: TestCase) => Promise<void>
 ): (test: (testCase: TestCase) => Promise<void>) => Promise<void> {
   if (alertOnFailure !== undefined) {
     // set naughty global singleton.
