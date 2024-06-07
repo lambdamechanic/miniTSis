@@ -135,12 +135,12 @@ export class TestingState {
           testCase.choices,
         ];
         if (this.bestScoring === undefined) {
-          console.log('first time setting best scoring to', relevantInfo);
+          // console.log('first time setting best scoring to', relevantInfo);
           this.bestScoring = relevantInfo;
         } else {
           const [bestScore, _] = this.bestScoring;
           if (testCase.targetingScore > bestScore) {
-            console.log('updating best scoring to', relevantInfo);
+            // console.log('updating best scoring to', relevantInfo);
             this.bestScoring = relevantInfo;
           }
         }
@@ -222,13 +222,10 @@ export class TestingState {
   }
 
   async run(): Promise<void> {
-    //console.log("toplevel generate");
     await this.generate();
-    //console.log("toplevel target");
     await this.target();
-    // console.log("toplevel shrink");
     await this.shrink();
-    // console.error("toplevel done!");
+
   }
 
   async generate(): Promise<void> {
@@ -277,7 +274,7 @@ export class TestingState {
             ...this.result.slice(0, i),
             ...this.result.slice(i + k),
           ];
-          if (!consider(attempt)) {
+          if (!(await consider(attempt))) {
             if (i > 0 && attempt[i - 1] > 0) {
               attempt[i - 1]--;
               if (await consider(attempt)) {
@@ -514,10 +511,9 @@ export class CachedTestFunction {
 	    node = createFakeChoiceMap();
 
 
-	    // console.warn(`got a bit weird c:${c}, i:${i}, choices:${choices},
-            //     ${JSON.stringify({tree: serializeChoiceMap(this.tree)
-            //                      ,node: serializeChoiceMap(node)})}`);
-	    // possibly this should cut off the iteration as well?
+	    throw new Error(`got a bit weird c:${c}, i:${i}, choices:${choices},
+                ${JSON.stringify({tree: serializeChoiceMap(this.tree)
+                                 ,node: serializeChoiceMap(node)})}`);
 	  }
 	}
       } else {
@@ -592,7 +588,7 @@ export function runTest(
     const asyncTestWrapper = async (testCase: TestCase): Promise<void> => {
       // Simply invoke the original test function. Since it's synchronous,
       // we don't need to await it, but we're in an async function, so it's okay.
-      test(testCase);
+      await test(testCase);
     };
 
     (asyncTestWrapper as any).testName = (test as any).testName;
@@ -632,6 +628,7 @@ export function runTestAsync(
           throw error;
         } else {
         }
+	// console.log("test case marked interesting, we should definitely have a failure");
         testCase.markStatus(Status.INTERESTING);
       }
     };
@@ -660,16 +657,16 @@ export function runTestAsync(
           previousFailure.byteOffset + i,
           8
         ).getBigInt64(0, false);
-        console.log('big int number', bigintNumber);
+        // console.log('big int number', bigintNumber);
         choices.push(bigintNumber);
       }
-      console.log(
-        'choices from previous failure',
-        choices.map(a => toNumber(a))
-      );
+      // console.log(
+      //   'choices from previous failure',
+      //   choices.map(a => toNumber(a))
+      // );
       await state.testFunction(TestCase.forChoices(choices, !quiet));
     }
-    //     console.log("state is", state);
+
     if (state.result === undefined) {
       await state.run();
     }
@@ -855,24 +852,28 @@ export class TestCase {
     if (!this) {
       throw new Error('badthis');
     }
+    let result: boolean;
     if (p <= 0) {
-      return Boolean(this.forcedChoice(0n));
+      result = Boolean(this.forcedChoice(0n));
     } else if (p >= 1) {
-      return Boolean(this.forcedChoice(1n));
+      result = Boolean(this.forcedChoice(1n));
     } else {
-      //console.log("using weighted");
-      const result = Boolean(
+//       console.warn("using weighted");
+      result = Boolean(
         this.makeChoice(BigInt(1), () => {
           const fl = this.random.randFloat();
-          // console.log(`the float is ${fl}, p is ${p}`);
+   //       console.warn(`the float is ${fl}, p is ${p}`);
           return BigInt(fl <= p ? 1 : 0);
         })
       );
-      if (this.shouldPrint()) {
-        console.log(`weighted(${p}): ${result}`);
-      }
-      return result;
+      //console.warn("should print?", this.shouldPrint());
+
     }
+    if(result == undefined) { throw new Error("bad error"); }
+    if (this.shouldPrint()) {
+      console.log(`weighted(${p}): ${result}`);
+    }
+    return result;
   }
 
   forcedChoice(n: bigint): bigint {
@@ -922,8 +923,8 @@ export class TestCase {
     }
     //console.warn(`exiting any with [${result}] and ${possibility} at ${this.depth}: printable: ${this.shouldPrint()}`);
     if (this.shouldPrint()) {
-      //console.warn(`any(${possibility}): [${result}]`);
       console.log(`any(${possibility}): [${result}]`);
+      // console.warn(`any(${possibility}): [${JSON.stringify(result, null, 2)}]`);
     }
 
     return result;

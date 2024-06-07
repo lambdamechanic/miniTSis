@@ -36,6 +36,9 @@ import * as os from 'os';
 import {Database, IDataStore} from 'minitsis-datastore';
 import {BrowserDataStore} from 'minitsis-browser'
 import {NodeDataStore} from 'minitsis-node';
+// import {expect, jest, test} from '@jest/globals';
+
+
 
 const _nodejs =
   typeof process !== 'undefined' && process.versions && process.versions.node;
@@ -298,13 +301,13 @@ describe('Minithesis Tests', () => {
 
     // these _should_ work. we are outputting a bunch of other stuff right now. TODO.
     // Verify that logMock was called exactly twice
-    //expect(logMock).toHaveBeenCalledTimes(2);
+    expect(logMock).toHaveBeenCalledTimes(2);
 
     // Verify that logMock was called with the expected string on the first call
-    //expect(logMock).toHaveBeenNthCalledWith(1, expect.stringContaining('choice(1000): 1000'));
+    expect(logMock).toHaveBeenNthCalledWith(1, expect.stringContaining('choice(1000): 1000'));
 
     // Verify that logMock was called with the expected string on the second call
-    /// expect(logMock).toHaveBeenNthCalledWith(2, expect.stringContaining('choice(1000): 1000'));
+    expect(logMock).toHaveBeenNthCalledWith(2, expect.stringContaining('choice(1000): 1000'));
   });
   test('can target a score upwards without failing', async () => {
     let maxScore = 0;
@@ -339,16 +342,9 @@ describe('Minithesis Tests', () => {
     await expect(
       runTest(1000, new Random(), new MapDB(), false)(testFn)
     ).rejects.toThrow('Score 10000 should be less than 10000');
-    //todo output test
-    //
-    // assert [c.strip() for c in captured.out.splitlines()] == [
-    //     "choice(1000): 0",
-    //     "choice(1000): 0",
-    //     f"choice({big}): {big}",
-    // ]
-    // called way too much.
-    // expect(logMock).toHaveBeenCalledTimes(3);
-    // expect(logMock).toHaveBeenCalledWith(expect.stringContaining('choice(1000): 0'));
+
+    expect(logMock).toHaveBeenCalledTimes(3);
+    expect(logMock).toHaveBeenCalledWith(expect.stringContaining('choice(1000): 0'));
     await expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('choice(10000): 10000')
     );
@@ -358,12 +354,12 @@ describe('Minithesis Tests', () => {
     'can target a score downwards - seed %i',
     async seed => {
       // logMock.mockRestore();
-      const testFn = (testCase: TestCase) => {
+      const testFn = async (testCase: TestCase) => {
         const n = testCase.choice(1000n);
         const m = testCase.choice(1000n);
         const score = n + m;
         // console.warn("score1", score);
-        testCase.target(Number(-score)); // Assuming `target` method expects a number. Adjust if it accepts bigint.
+        await testCase.target(Number(-score)); // Assuming `target` method expects a number. Adjust if it accepts bigint.
         // console.warn("score", score);
         if (score <= 0) {
           throw new Error(
@@ -373,33 +369,34 @@ describe('Minithesis Tests', () => {
       };
 
       await expect(
-        runTest(1000, new Random(seed), new MapDB(), false)(wrapWithName(testFn))
+        runTestAsync(1000, new Random(seed), new MapDB(), false)(wrapWithNameAsync(testFn))
       ).rejects.toThrow('Assertion failed: score (0) should be greater than 0');
 
       // Verify the log includes the expected message
       await expect(logMock).toHaveBeenCalledWith(
         expect.stringContaining('choice(1000): 0')
       );
-      // expect(logMock).toHaveBeenCalledTimes(2); // Assuming there's a known bug that causes logs to be duplicated
+
+      expect(logMock).toHaveBeenCalledTimes(2); // Assuming there's a known bug that causes logs to be duplicated
     }
   );
 
   test('prints a top level weighted', async () => {
     const testFn = (testCase: TestCase) => {
-      if (!testCase.weighted(0.5)) {
+      if (testCase.weighted(0.5) === false) {
         throw new Error('Assertion failed: weighted(0.5) should be true');
       }
     };
 
     await expect(
-      runTest(1000, new Random(), new MapDB(), true)(wrapWithName(testFn))
+      runTest(1000, new Random(), new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: weighted(0.5) should be true');
 
-    // Verify the log includes the expected message
-    //expect(logMock).toHaveBeenCalledWith(
-    //expect.stringContaining('weighted(0.5): false')
-    // );
-    // expect(logMock).toHaveBeenCalledTimes(1); // Assuming there's a known bug that causes logs to be duplicated
+//    Verify the log includes the expected message
+    expect(logMock).toHaveBeenCalledWith(
+      expect.stringContaining('weighted(0.5): false')
+    );
+    expect(logMock).toHaveBeenCalledTimes(1); // Assuming there's a known bug that causes logs to be duplicated
   });
 
   test('errors when using frozen', async () => {
@@ -513,9 +510,9 @@ describe('Minithesis Tests', () => {
     };
 
     await expect(
-      runTest(100, new Random(), new MapDB(), true)(wrapWithName(testFn))
+      runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: m <= 99900');
-    // expect(logMock).toHaveBeenCalledWith(expect.stringContaining("choice(100000): 99901"));
+    expect(logMock).toHaveBeenCalledWith(expect.stringContaining("choice(100000): 99901"));
   });
 
   test('impossible weighted', async () => {
@@ -586,7 +583,7 @@ function wrapWithNameAsync(
 
 
   test('integers respects minimum', async () => {
-    const testFn = (tc: TestCase) =>  {
+    const testFn = async (tc: TestCase) =>  {
       const n = tc.any(integers(1, 50));
       const m = tc.any(integers(n, 100));
       if (m < n) {
@@ -594,7 +591,7 @@ function wrapWithNameAsync(
       }
     };
     await expect(
-      runTest(10000, new Random(), new MapDB(), false)(wrapWithName(testFn))
+      await runTestAsync(10000, new Random(), new MapDB(), false)(wrapWithNameAsync(testFn))
     );
   });
 
@@ -688,7 +685,6 @@ function wrapWithNameAsync(
     const random = new Random();
     const database = new MapDB(); // Assuming MapDB is a suitable in-memory database or similar setup
 
-    //logMock.mockRestore()
     await expect(
       runTest(5000, random, database, false)(wrapWithName(testFn))
     ).rejects.toThrow(/broken combination: (1,7|7,1)/);
