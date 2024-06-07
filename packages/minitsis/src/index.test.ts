@@ -1,4 +1,3 @@
-// Assuming you have already translated minithesis functions and classes to TypeScript
 import {
   CachedTestFunction,
   DBWrapper,
@@ -26,9 +25,7 @@ import {
   getBufferSize,
   setBufferSize
 
-} from './index'; // Adjust import path as necessary
-
-// import StorageDB from './StorageDB';
+} from './index';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -36,9 +33,6 @@ import * as os from 'os';
 import {Database, IDataStore} from 'minitsis-datastore';
 import {BrowserDataStore} from 'minitsis-browser'
 import {NodeDataStore} from 'minitsis-node';
-// import {expect, jest, test} from '@jest/globals';
-
-
 
 const _nodejs =
   typeof process !== 'undefined' && process.versions && process.versions.node;
@@ -92,8 +86,6 @@ function wrapWithNameAsync(
   return testFn;
 }
 
-
-
 describe('Minithesis Tests', () => {
   test.each(Array.from({length: 1}, (_, i) => i))(
     'finds small list new - seed %i',
@@ -110,10 +102,9 @@ describe('Minithesis Tests', () => {
         }
       });
 
-      const random = new Random(seed);
       const database = new MapDB();
       await expect(
-        runTest(100, random, database, false)(testFn)
+        runTest(100, seed, database, false)(testFn)
       ).rejects.toThrow('Assertion failed: sum(ls) <= 1000');
 
       // Verify the log includes the expected message from minithesis logic, not the testFn
@@ -124,7 +115,7 @@ describe('Minithesis Tests', () => {
   );
 
   test('reduces additive pairs', async () => {
-    const random = new Random(1212); // Use appropriate seed if necessary
+
     const database = new MapDB();
 
     const testFn = (testCase: TestCase) => {
@@ -138,7 +129,7 @@ describe('Minithesis Tests', () => {
     };
 
     await expect(
-      runTest(1000, random, database, false)(wrapWithName(testFn))
+      runTest(1000, 1234, database, false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: m + n > 1000');
 
     expect(logMock).toHaveBeenCalledWith(
@@ -157,7 +148,7 @@ describe('Minithesis Tests', () => {
     };
 
     await expect(
-      runTest(100, new Random(), new MapDB(), true)(wrapWithName(testFn))
+      runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn))
     );
 
   });
@@ -170,7 +161,7 @@ describe('Minithesis Tests', () => {
     };
 
     await expect(
-      runTest(100, new Random(), new MapDB(), false)(testFn)
+      runTest(100, 1234, new MapDB(), false)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
   test('error on unbounded test function', async () => {
@@ -183,7 +174,7 @@ describe('Minithesis Tests', () => {
     setBufferSize(10);
 
     await expect(
-      runTest(5, new Random(), new MapDB(), true)(testFn)
+      runTest(5, 1234, new MapDB(), true)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -214,7 +205,7 @@ describe('Minithesis Tests', () => {
       };
 
       await expect(
-        runTest(100, new Random(), db, false)(wrapWithName(testFn))
+        runTest(100, 1234, db, false)(wrapWithName(testFn))
       ).rejects.toThrow('Choice is too high');
       return db;
     };
@@ -272,10 +263,9 @@ describe('Minithesis Tests', () => {
         }
       });
 
-      const random = new Random(seed); // Make sure Random class supports seeding
       const database = new MapDB(); // Assuming MapDB is an implementation of Database
       await expect(
-        runTest(200, random, database, true)(testFn)
+        runTest(200, seed, database, true)(testFn)
       ).rejects.toThrow('Found the local maximum at (500, 500)');
     }
   );
@@ -292,7 +282,7 @@ describe('Minithesis Tests', () => {
     });
 
     await expect(
-      runTest(1000, new Random(), new MapDB(), false)(testFn)
+      runTest(1000, 1234, new MapDB(), false)(testFn)
     ).rejects.toThrow('Score exceeds target');
 
     expect(logMock).toHaveBeenCalledWith(
@@ -320,7 +310,7 @@ describe('Minithesis Tests', () => {
       maxScore = Math.max(Number(score), maxScore);
     });
 
-    await runTest(1000, new Random(), new MapDB(), true)(testFn);
+    await runTest(1000, 1234, new MapDB(), true)(testFn);
 
     // Verify that maxScore reached the expected value
     expect(maxScore).toBe(2000);
@@ -340,7 +330,7 @@ describe('Minithesis Tests', () => {
     });
 
     await expect(
-      runTest(1000, new Random(), new MapDB(), false)(testFn)
+      runTest(1000, 1234, new MapDB(), false)(testFn)
     ).rejects.toThrow('Score 10000 should be less than 10000');
 
     expect(logMock).toHaveBeenCalledTimes(3);
@@ -369,7 +359,7 @@ describe('Minithesis Tests', () => {
       };
 
       await expect(
-        runTestAsync(1000, new Random(seed), new MapDB(), false)(wrapWithNameAsync(testFn))
+        runTestAsync(1000, seed, new MapDB(), false)(wrapWithNameAsync(testFn))
       ).rejects.toThrow('Assertion failed: score (0) should be greater than 0');
 
       // Verify the log includes the expected message
@@ -389,7 +379,7 @@ describe('Minithesis Tests', () => {
     };
 
     await expect(
-      runTest(1000, new Random(), new MapDB(), false)(wrapWithName(testFn))
+      runTest(1000, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: weighted(0.5) should be true');
 
 //    Verify the log includes the expected message
@@ -426,7 +416,7 @@ describe('Minithesis Tests', () => {
     const testFn = wrapWithName((tc: TestCase) => {
       tc.choice(BigInt(2) ** BigInt(64) - BigInt(1));
     });
-    await runTest(100, new Random(), new MapDB(), true)(testFn);
+    await runTest(100, 1234, new MapDB(), true)(testFn);
   });
 
   test('uuids are different', async () => {
@@ -437,7 +427,7 @@ describe('Minithesis Tests', () => {
 	throw new Error("non unique identifiers!");
       }
     });
-    await runTest(100, new Random(), new MapDB(), true)(wrapWithName(testFn));
+    await runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn));
 
   });
   test('can draw mixture', async () => {
@@ -447,7 +437,7 @@ describe('Minithesis Tests', () => {
       expect(Number(m)).toBeLessThanOrEqual(5);
       expect(Number(m)).not.toBe(1);
     });
-    await runTest(100, new Random(), new MapDB(), true)(testFn);
+    await runTest(100, 1234, new MapDB(), true)(testFn);
   });
 
   test('mapped possibility', async () => {
@@ -455,7 +445,7 @@ describe('Minithesis Tests', () => {
       const n = tc.any(bigIntegers(0n, 5n).map((n: bigint) => n * 2n));
       expect(n % 2n).toBe(0n);
     });
-    await runTest(100, new Random(), new MapDB(), true)(testFn);
+    await runTest(100, 1234, new MapDB(), true)(testFn);
   });
 
   test('selected possibility', async () => {
@@ -467,7 +457,7 @@ describe('Minithesis Tests', () => {
         throw 'Bad odd number!';
       }
     });
-    await runTest(100, new Random(), new MapDB(), true)(testFn);
+    await runTest(100, 1234, new MapDB(), true)(testFn);
   });
 
   test('bound possibility', async () => {
@@ -479,7 +469,7 @@ describe('Minithesis Tests', () => {
       );
       expect(m <= n && n <= m + 10n).toBe(true);
     });
-    await runTest(100, new Random(), new MapDB(), true)(testFn);
+    await runTest(100, 1234, new MapDB(), true)(testFn);
   });
 
   test('cannot witness nothing', async () => {
@@ -487,7 +477,7 @@ describe('Minithesis Tests', () => {
       tc.any(nothing());
     });
     await expect(
-      runTest(100, new Random(), new MapDB(), true)(testFn)
+      runTest(100, 1234, new MapDB(), true)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -496,7 +486,7 @@ describe('Minithesis Tests', () => {
       tc.any(mixOf());
     });
     await expect(
-      runTest(100, new Random(), new MapDB(), true)(testFn)
+      runTest(100, 1234, new MapDB(), true)(testFn)
     ).rejects.toThrow(Unsatisfiable);
   });
 
@@ -510,7 +500,7 @@ describe('Minithesis Tests', () => {
     };
 
     await expect(
-      runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
+      runTest(100, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: m <= 99900');
     expect(logMock).toHaveBeenCalledWith(expect.stringContaining("choice(100000): 99901"));
   });
@@ -529,7 +519,7 @@ describe('Minithesis Tests', () => {
       }
     };
     await expect(
-      runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
+      runTest(100, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Failure in choice(1)');
   });
 
@@ -550,7 +540,7 @@ describe('Minithesis Tests', () => {
       }
     };
     await expect(
-      runTest(1000, new Random(), new MapDB(), false)(wrapWithName(testFn))
+      runTest(1000, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow("Failure: length (1)");
   });
 function wrapWithNameAsync(
@@ -573,7 +563,7 @@ function wrapWithNameAsync(
       throw new Error("always fail");
     });
     await expect(
-      runTestAsync(100, new Random(), new MapDB(), false,
+      runTestAsync(100, 1234, new MapDB(), false,
 		   (async (testCase) => {
 		     throw new Error("QUITTING MESSILY");
 		   })
@@ -591,7 +581,7 @@ function wrapWithNameAsync(
       }
     };
     await expect(
-      await runTestAsync(10000, new Random(), new MapDB(), false)(wrapWithNameAsync(testFn))
+      await runTestAsync(10000, 1234, new MapDB(), false)(wrapWithNameAsync(testFn))
     );
   });
 
@@ -606,7 +596,7 @@ function wrapWithNameAsync(
       }
     });
     await expect(
-      runTest(100, new Random(), new MapDB(), false)(testFn)
+      runTest(100, 1234, new MapDB(), false)(testFn)
     ).rejects.toThrow('Failure');
   });
 
@@ -616,11 +606,11 @@ function wrapWithNameAsync(
       expect(ls.length).toBeGreaterThanOrEqual(1);
       expect(ls.length).toBeLessThanOrEqual(3);
     });
-    await runTest(100, new Random(), new MapDB(), false)(testFn);
+    await runTest(100, 1234, new MapDB(), false)(testFn);
   });
 
   test('forced choice bounds', async () => {
-    const tc = new TestCase([], new Random(), Infinity);
+    const tc = new TestCase([], new Random(1234), Infinity);
     expect(() => tc.forcedChoice(2n ** 64n)).toThrowError();
   });
   test('failure from hypothesis 1', async () => {
@@ -643,7 +633,7 @@ function wrapWithNameAsync(
       }
     });
     await expect(
-      runTest(1000, new Random(100), new MapDB(), true)(testFn)
+      runTest(1000, 1234, new MapDB(), true)(testFn)
     ).rejects.toThrow('Failure');
   });
 
@@ -669,7 +659,7 @@ function wrapWithNameAsync(
       }
     };
     await expect(
-      runTest(1000, new Random(), new MapDB(), true)(wrapWithName(testFn))
+      runTest(1000, 1234, new MapDB(), true)(wrapWithName(testFn))
     ).rejects.toThrow('Failure');
   });
 
@@ -682,7 +672,7 @@ function wrapWithNameAsync(
       }
     };
 
-    const random = new Random();
+    const random = 1234;
     const database = new MapDB(); // Assuming MapDB is a suitable in-memory database or similar setup
 
     await expect(
@@ -704,7 +694,7 @@ function wrapWithNameAsync(
     };
 
     await expect(
-      runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn))
+      runTest(100, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Predicate failed: b (6) - a (0) > 5');
   });
   });

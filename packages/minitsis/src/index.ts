@@ -579,7 +579,7 @@ export class CachedTestFunction {
 
 export function runTest(
   maxExamples = 100,
-  random?: Random,
+  seed : number,
   database?: Database, // Assume Database interface/type is defined elsewhere.
   quiet = false
 ): (test: (testCase: TestCase) => void) => Promise<void> {
@@ -594,7 +594,7 @@ export function runTest(
     (asyncTestWrapper as any).testName = (test as any).testName;
     // Now invoke runTestAsync with the wrapped test function.
     // runTestAsync expects a function that returns a Promise, which asyncTestWrapper does.
-    return runTestAsync(maxExamples, random, database, quiet)(asyncTestWrapper);
+    return runTestAsync(maxExamples, seed, database, quiet)(asyncTestWrapper);
   };
 }
 
@@ -602,8 +602,8 @@ export function runTest(
 let alertOnFailureSingleton;
 
 export function runTestAsync(
-  maxExamples = 100,
-  random?: Random,
+  maxExamples : number = 100,
+  seed: number,
   database?: Database, // Assume Database interface/type is defined elsewhere
   quiet = false,
   alertOnFailure?  : (testCase: TestCase) => Promise<void>,
@@ -633,7 +633,7 @@ export function runTestAsync(
       }
     };
 
-    const defRandom = random ? random : new Random();
+    const defRandom = new Random(seed);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const testName = (test as any).testName;
@@ -1044,14 +1044,8 @@ export class Random {
   private m: number = 2 ** 32;
   public seed: number;
 
-  constructor(seed?: number) {
-    if (seed === undefined) {
-      // If no seed is provided, generate one using Math.random()
-      // Note: Math.random() returns a number in [0, 1), so we scale it to an appropriate seed value
-      this.seed = Math.floor(Math.random() * this.m);
-    } else {
-      this.seed = seed % this.m;
-    }
+  constructor(seed: number) {
+    this.seed = seed % this.m;
   }
 
   // Generates the next pseudorandom number
