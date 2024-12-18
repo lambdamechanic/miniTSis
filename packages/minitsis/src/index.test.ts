@@ -590,6 +590,15 @@ describe('Minithesis Tests', () => {
     return testFn;
   }
 
+  test('runTestAsync throws when database is not provided', async () => {
+    const testFn = wrapWithNameAsync(async (tc: TestCase) => {
+      tc.any(integers(1, 2));
+    });
+    await expect(
+      runTestAsync(100, 1234)(testFn)
+    ).rejects.toThrow('need a db');
+  });
+
   test('alertOnFailure is called', async () => {
     const testFn = wrapWithNameAsync(async (tc: TestCase) => {
       const m = tc.any(integers(1, 2));
