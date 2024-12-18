@@ -190,6 +190,7 @@ export class TestingState {
       const i = this.random.randInt(0, this.bestScoring[1].length - 1);
       let sign = 0n;
       for (const k of [1n, -1n]) {
+        /* istanbul ignore if */ // Early return is hard to trigger in tests
         if (!this.shouldKeepGenerating()) {
           return;
         }
