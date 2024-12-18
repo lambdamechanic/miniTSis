@@ -669,6 +669,39 @@ describe('Minithesis Tests', () => {
     expect(() => tc.choice(-1n)).toThrow('Invalid choice -1');
   });
 
+  test('randBigInt validation', () => {
+    const random = new Random(1234);
+    // Test max < min
+    expect(() => random.randBigInt(10n, 5n)).toThrow('min must be less than or equal to max');
+    // Test equal values works fine
+    expect(() => random.randBigInt(5n, 5n)).not.toThrow();
+    expect(random.randBigInt(5n, 5n)).toBe(5n);
+  });
+
+  test('randRange generates numbers within bounds', () => {
+    const random = new Random(1234);
+    const min = 5;
+    const max = 10;
+    for (let i = 0; i < 100; i++) {
+      const result = random.randRange(min, max);
+      expect(result).toBeGreaterThanOrEqual(min);
+      expect(result).toBeLessThan(max);
+    }
+  });
+
+  test('bigintArraysEqual comparison', () => {
+    // Test equal arrays
+    expect(bigintArraysEqual([1n, 2n, 3n], [1n, 2n, 3n])).toBe(true);
+    // Test different lengths
+    expect(bigintArraysEqual([1n, 2n], [1n, 2n, 3n])).toBe(false);
+    // Test different values
+    expect(bigintArraysEqual([1n, 2n, 3n], [1n, 2n, 4n])).toBe(false);
+    // Test undefined arrays
+    expect(bigintArraysEqual(undefined, [1n])).toBe(false);
+    expect(bigintArraysEqual([1n], undefined)).toBe(false);
+    expect(bigintArraysEqual(undefined, undefined)).toBe(false);
+  });
+
   test('forced choice bounds', async () => {
     const tc = new TestCase([], new Random(1234), Infinity);
     expect(() => tc.forcedChoice(2n ** 64n)).toThrowError();
