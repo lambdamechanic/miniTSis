@@ -806,9 +806,7 @@ export class TestCase {
 
   weighted(p: number): boolean {
     // console.log(`weighted: ${p}`);
-    if (!this) {
-      throw new Error('badthis');
-    }
+
     let result: boolean;
     if (p <= 0) {
       result = Boolean(this.forcedChoice(0n));
@@ -825,9 +823,9 @@ export class TestCase {
       );
       //console.warn("should print?", this.shouldPrint());
     }
-    if (result == undefined) {
-      throw new Error('bad error');
-    }
+    // if (result == undefined) {
+    //   throw new Error('bad error');
+    // }
     if (this.shouldPrint()) {
       console.log(`weighted(${p}): ${result}`);
     }
@@ -865,10 +863,6 @@ export class TestCase {
   }
 
   any<U>(possibility: Possibility<U>): U {
-    if (!this) {
-      throw new Error('selfless possibility on any');
-    }
-
     //    console.error(`entering any with this ${this} and ${possibility} at ${this.depth}`);
     let result: U;
     try {
