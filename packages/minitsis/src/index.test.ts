@@ -21,7 +21,6 @@ class MapDB implements Database {
 import {
   CachedTestFunction,
   Frozen,
-  MapDB,
   Random,
   Status,
   StopTest,
