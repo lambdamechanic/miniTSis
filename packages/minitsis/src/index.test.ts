@@ -788,7 +788,7 @@ targetingScore: 0.5
   });
 
   test('replace returns false when index exceeds array length', async () => {
-    const testFn = wrapWithName((testCase: TestCase) => {
+    const testFn = wrapWithNameAsync(async (testCase: TestCase) => {
       // Make some initial choices to get a result
       const n = testCase.choice(10n);
       if (n > 5n) {
