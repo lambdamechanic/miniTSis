@@ -750,6 +750,28 @@ describe('Minithesis Tests', () => {
     const tc = new TestCase([], new Random(1234), Infinity);
     expect(() => tc.forcedChoice(2n ** 64n)).toThrowError();
   });
+
+  test('TestCase toString outputs expected format', () => {
+    const random = new Random(12345);
+    const testCase = new TestCase([1n, 2n], random, 100, true);
+    testCase.choices = [3n, 4n];
+    testCase.status = Status.VALID;
+    testCase.depth = 1;
+    testCase.targetingScore = 0.5;
+
+    const expected = `TestCase {
+prefix: [1, 2],
+random: Random { seed: 12345 },
+maxSize: 100,
+choices: [3, 4],
+status: VALID,
+printResults: true,
+depth: 1,
+targetingScore: 0.5
+}`;
+
+    expect(testCase.toString()).toBe(expected);
+  });
   test('failure from hypothesis 1', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
       const n1 = tc.weighted(0.0);
