@@ -307,7 +307,7 @@ export class TestingState {
             ...this.result.slice(0, i),
             ...this.result.slice(i + k),
           ];
-          await consider(attempt);
+          await this.consider(attempt);
         }
       }
 
@@ -327,7 +327,7 @@ export class TestingState {
           for (let j = i; j < i + k; j++) {
             attempt[j] = BigInt(0); // Reset chunk to zeroes
           }
-          await consider(attempt);
+          await this.consider(attempt);
         }
       }
 
@@ -338,7 +338,7 @@ export class TestingState {
           if (j < this.result.length) {
             // Try swapping out of order pairs
             if (this.result[i] > this.result[j]) {
-              await replace({[i]: this.result[j], [j]: this.result[i]});
+              await this.replace({[i]: this.result[j], [j]: this.result[i]});
             }
             // Adjust nearby pairs by redistributing value
             if (j < this.result.length && this.result[i] > BigInt(0)) {
@@ -346,7 +346,7 @@ export class TestingState {
               const previousJ = this.result[j];
               await binSearchDown(BigInt(0), previousI, async (v: bigint) => {
                 // Attempt to replace the value at i with v and adjust j accordingly
-                return await replace({
+                return await this.replace({
                   [i]: v,
                   [j]: previousJ + (previousI - v),
                 });
