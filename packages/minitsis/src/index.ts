@@ -1045,7 +1045,7 @@ export class Random {
   }
 }
 
-function bigintArraysEqual(
+export function bigintArraysEqual(
   a: bigint[] | undefined,
   b: bigint[] | undefined
 ): boolean {
