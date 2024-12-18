@@ -664,6 +664,11 @@ describe('Minithesis Tests', () => {
     );
   });
 
+  test('TestCase throws on negative choice argument', () => {
+    const tc = new TestCase([], new Random(1234), Infinity);
+    expect(() => tc.choice(-1n)).toThrow('Invalid choice -1');
+  });
+
   test('forced choice bounds', async () => {
     const tc = new TestCase([], new Random(1234), Infinity);
     expect(() => tc.forcedChoice(2n ** 64n)).toThrowError();
