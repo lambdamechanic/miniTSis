@@ -22,16 +22,15 @@ import {
   uuids,
 
   // for debugging only
-  getBufferSize,
-  setBufferSize
-
+  // getBufferSize,
+  setBufferSize,
 } from './index';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import {Database, IDataStore} from 'minitsis-datastore';
-import {BrowserDataStore} from 'minitsis-browser'
+import {BrowserDataStore} from 'minitsis-browser';
 import {NodeDataStore} from 'minitsis-node';
 
 const _nodejs =
@@ -49,13 +48,12 @@ export function createDataStore<U>(dbPath: string): IDataStore<U> {
   }
 }
 
-
 // const originalConsoleLog = console.log;
 let logMock: jest.SpyInstance;
 
 beforeEach(() => {
   // set normal buffer size
-  setBufferSize(8*1024);
+  setBufferSize(8 * 1024);
   // Spy on console.log and keep a reference to the spy
   logMock = jest.spyOn(console, 'log').mockImplementation();
 });
@@ -98,14 +96,14 @@ describe('Minithesis Tests', () => {
         const ls = testCase.any(lists(integers(0, 10000)));
         if (sum(ls) > 1000) {
           // Logic to fail the test, expecting minithesis to have logged the value generation
-	  throw new Error('Assertion failed: sum(ls) <= 1000')
+          throw new Error('Assertion failed: sum(ls) <= 1000');
         }
       });
 
       const database = new MapDB();
-      await expect(
-        runTest(100, seed, database, false)(testFn)
-      ).rejects.toThrow('Assertion failed: sum(ls) <= 1000');
+      await expect(runTest(100, seed, database, false)(testFn)).rejects.toThrow(
+        'Assertion failed: sum(ls) <= 1000'
+      );
 
       // Verify the log includes the expected message from minithesis logic, not the testFn
       expect(logMock).toHaveBeenCalledWith(
@@ -115,7 +113,6 @@ describe('Minithesis Tests', () => {
   );
 
   test('reduces additive pairs', async () => {
-
     const database = new MapDB();
 
     const testFn = (testCase: TestCase) => {
@@ -147,12 +144,8 @@ describe('Minithesis Tests', () => {
       expect(n).not.toBe(0);
     };
 
-    await expect(
-      runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn))
-    );
-
+    await expect(runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn)));
   });
-
 
   test('error on too strict precondition', async () => {
     const testFn = (testCase: TestCase) => {
@@ -173,9 +166,9 @@ describe('Minithesis Tests', () => {
     };
     setBufferSize(10);
 
-    await expect(
-      runTest(5, 1234, new MapDB(), true)(testFn)
-    ).rejects.toThrow(Unsatisfiable);
+    await expect(runTest(5, 1234, new MapDB(), true)(testFn)).rejects.toThrow(
+      Unsatisfiable
+    );
   });
 
   describe('test reuses results from the database', () => {
@@ -195,7 +188,7 @@ describe('Minithesis Tests', () => {
     });
 
     const run = async () => {
-      const db = new DBWrapper(createDataStore<string>(tempDirPath + "/db"));
+      const db = new DBWrapper(createDataStore<string>(tempDirPath + '/db'));
       const testFn = (testCase: TestCase) => {
         count += 1;
         const choice = testCase.choice(BigInt(10000));
@@ -264,9 +257,9 @@ describe('Minithesis Tests', () => {
       });
 
       const database = new MapDB(); // Assuming MapDB is an implementation of Database
-      await expect(
-        runTest(200, seed, database, true)(testFn)
-      ).rejects.toThrow('Found the local maximum at (500, 500)');
+      await expect(runTest(200, seed, database, true)(testFn)).rejects.toThrow(
+        'Found the local maximum at (500, 500)'
+      );
     }
   );
 
@@ -294,10 +287,16 @@ describe('Minithesis Tests', () => {
     expect(logMock).toHaveBeenCalledTimes(2);
 
     // Verify that logMock was called with the expected string on the first call
-    expect(logMock).toHaveBeenNthCalledWith(1, expect.stringContaining('choice(1000): 1000'));
+    expect(logMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('choice(1000): 1000')
+    );
 
     // Verify that logMock was called with the expected string on the second call
-    expect(logMock).toHaveBeenNthCalledWith(2, expect.stringContaining('choice(1000): 1000'));
+    expect(logMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('choice(1000): 1000')
+    );
   });
   test('can target a score upwards without failing', async () => {
     let maxScore = 0;
@@ -334,7 +333,9 @@ describe('Minithesis Tests', () => {
     ).rejects.toThrow('Score 10000 should be less than 10000');
 
     expect(logMock).toHaveBeenCalledTimes(3);
-    expect(logMock).toHaveBeenCalledWith(expect.stringContaining('choice(1000): 0'));
+    expect(logMock).toHaveBeenCalledWith(
+      expect.stringContaining('choice(1000): 0')
+    );
     await expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('choice(10000): 10000')
     );
@@ -382,7 +383,7 @@ describe('Minithesis Tests', () => {
       runTest(1000, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: weighted(0.5) should be true');
 
-//    Verify the log includes the expected message
+    //    Verify the log includes the expected message
     expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('weighted(0.5): false')
     );
@@ -400,7 +401,7 @@ describe('Minithesis Tests', () => {
     expect(() => tc.choice(11n)).toThrow(Frozen);
 
     // Using Jest's expect to assert that calling forcedChoice on a frozen TestCase throws Frozen
-    expect(() => tc.forcedChoice(12n)).toThrow(Frozen)
+    expect(() => tc.forcedChoice(12n)).toThrow(Frozen);
   });
 
   // this doesn't actually error, because we are using bigints.
@@ -420,15 +421,14 @@ describe('Minithesis Tests', () => {
   });
 
   test('uuids are different', async () => {
-    const testFn = ((tc:TestCase) => {
+    const testFn = (tc: TestCase) => {
       const a = tc.any(uuids());
       const b = tc.any(uuids());
       if (a === b) {
-	throw new Error("non unique identifiers!");
+        throw new Error('non unique identifiers!');
       }
-    });
+    };
     await runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn));
-
   });
   test('can draw mixture', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
@@ -476,18 +476,18 @@ describe('Minithesis Tests', () => {
     const testFn = wrapWithName((tc: TestCase) => {
       tc.any(nothing());
     });
-    await expect(
-      runTest(100, 1234, new MapDB(), true)(testFn)
-    ).rejects.toThrow(Unsatisfiable);
+    await expect(runTest(100, 1234, new MapDB(), true)(testFn)).rejects.toThrow(
+      Unsatisfiable
+    );
   });
 
   test('cannot witness empty mix of', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
       tc.any(mixOf());
     });
-    await expect(
-      runTest(100, 1234, new MapDB(), true)(testFn)
-    ).rejects.toThrow(Unsatisfiable);
+    await expect(runTest(100, 1234, new MapDB(), true)(testFn)).rejects.toThrow(
+      Unsatisfiable
+    );
   });
 
   test('target and reduce', async () => {
@@ -502,7 +502,9 @@ describe('Minithesis Tests', () => {
     await expect(
       runTest(100, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: m <= 99900');
-    expect(logMock).toHaveBeenCalledWith(expect.stringContaining("choice(100000): 99901"));
+    expect(logMock).toHaveBeenCalledWith(
+      expect.stringContaining('choice(100000): 99901')
+    );
   });
 
   test('impossible weighted', async () => {
@@ -526,65 +528,59 @@ describe('Minithesis Tests', () => {
   test('lists get shrunk eventually', async () => {
     const testFn = (tc: TestCase) => {
       // intent is to see if we can properly shrink the original list down.
-      const m = tc.any(lists(integers(0, 100))
-	.bind((n) =>
-	  lists(integers(0,40))
-	    .map((o) => [...o,...n,...o]))
-	.bind((p) =>
-	  lists(integers(0,40))
-	    .map((o) => [...o,...p,...o])));
-
+      const m = tc.any(
+        lists(integers(0, 100))
+          .bind(n => lists(integers(0, 40)).map(o => [...o, ...n, ...o]))
+          .bind(p => lists(integers(0, 40)).map(o => [...o, ...p, ...o]))
+      );
 
       if (m.includes(93)) {
-	throw new Error(`Failure: length (${m.length})`);
+        throw new Error(`Failure: length (${m.length})`);
       }
     };
     await expect(
       runTest(1000, 1234, new MapDB(), false)(wrapWithName(testFn))
-    ).rejects.toThrow("Failure: length (1)");
+    ).rejects.toThrow('Failure: length (1)');
   });
-function wrapWithNameAsync(
-  testFn: (testCase: TestCase) => Promise<void>
-): (testCase: TestCase) => Promise<void> {
-  // const currentTestName = expect.getState().currentTestName;
-  const currentTestName = "hardcodedOracleTest";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (testFn as any).testName = currentTestName;
-  return testFn;
-}
-
-
-
-
+  function wrapWithNameAsync(
+    testFn: (testCase: TestCase) => Promise<void>
+  ): (testCase: TestCase) => Promise<void> {
+    // const currentTestName = expect.getState().currentTestName;
+    const currentTestName = 'hardcodedOracleTest';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (testFn as any).testName = currentTestName;
+    return testFn;
+  }
 
   test('alertOnFailure is called', async () => {
     const testFn = wrapWithNameAsync(async (tc: TestCase) => {
-      const m = tc.any(integers(1,2));
-      throw new Error("always fail");
+      const m = tc.any(integers(1, 2));
+      throw new Error('always fail');
     });
     await expect(
-      runTestAsync(100, 1234, new MapDB(), false,
-		   (async (testCase) => {
-		     throw new Error("QUITTING MESSILY");
-		   })
-		  )(testFn)
-    ).rejects.toThrow("QUITTING MESSILY");
+      runTestAsync(100, 1234, new MapDB(), false, async testCase => {
+        throw new Error('QUITTING MESSILY');
+      })(testFn)
+    ).rejects.toThrow('QUITTING MESSILY');
   });
 
-
   test('integers respects minimum', async () => {
-    const testFn = async (tc: TestCase) =>  {
+    const testFn = async (tc: TestCase) => {
       const n = tc.any(integers(1, 50));
       const m = tc.any(integers(n, 100));
       if (m < n) {
-	throw new Error('Failure in integers(1, 100)');
+        throw new Error('Failure in integers(1, 100)');
       }
     };
     await expect(
-      await runTestAsync(10000, 1234, new MapDB(), false)(wrapWithNameAsync(testFn))
+      await runTestAsync(
+        10000,
+        1234,
+        new MapDB(),
+        false
+      )(wrapWithNameAsync(testFn))
     );
   });
-
 
   test('guaranteed weighted', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
@@ -697,4 +693,4 @@ function wrapWithNameAsync(
       runTest(100, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Predicate failed: b (6) - a (0) > 5');
   });
-  });
+});

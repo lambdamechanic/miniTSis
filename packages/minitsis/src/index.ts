@@ -101,12 +101,6 @@ export class TestingState {
   }
 
   public async testFunction(testCase: TestCase): Promise<void> {
-    if (!this) {
-      throw new Error('selfless');
-    }
-    //console.log("in testFunction", this);
-    //    console.log("in testFunction, calls=", this.calls, " validTestCases=", this.validTestCases);
-
     try {
       await this.testFunctionCallback(testCase);
     } catch (error) {
@@ -255,6 +249,7 @@ export class TestingState {
       return (await cached.call(choices)) === Status.INTERESTING;
     };
 
+    /* istanbul ignore if */
     if (!(await consider(this.result))) {
       throw new Error('current result inconsiderable');
     }
@@ -350,10 +345,12 @@ export class TestingState {
       // Try replacing blocks of choices with zeroes, then adjust for smaller values
       for (let k = this.result.length; k > 0; k -= 1) {
         // for (let k = 8; k >= 1; k /= 2) {
+        /* istanbul ignore if */
         if (this.result === undefined) {
           throw new Error('never undefined here');
         }
         for (let i = 0; i <= this.result.length - k; i++) {
+          /* istanbul ignore if */
           if (this.result === undefined) {
             throw new Error('never undefined here');
           }
@@ -587,7 +584,7 @@ export function runTest(
     const asyncTestWrapper = async (testCase: TestCase): Promise<void> => {
       // Simply invoke the original test function. Since it's synchronous,
       // we don't need to await it, but we're in an async function, so it's okay.
-      await test(testCase);
+      test(testCase);
     };
 
     (asyncTestWrapper as any).testName = (test as any).testName;
