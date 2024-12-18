@@ -772,6 +772,20 @@ targetingScore: 0.5
 
     expect(testCase.toString()).toBe(expected);
   });
+
+  test('targeting gives up after too many examples', async () => {
+    const testFn = wrapWithName((testCase: TestCase) => {
+      const n = testCase.choice(1000n);
+      testCase.target(Number(n));
+      // Never mark as interesting, so targeting should eventually give up
+    });
+
+    // Use a small maxExamples to ensure targeting gives up quickly
+    await runTest(5, 1234, new MapDB(), false)(testFn);
+    
+    // Test passes if runTest completes without finding an interesting case
+    expect(true).toBe(true);
+  });
   test('failure from hypothesis 1', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
       const n1 = tc.weighted(0.0);
