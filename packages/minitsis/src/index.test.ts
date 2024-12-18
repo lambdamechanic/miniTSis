@@ -788,10 +788,9 @@ targetingScore: 0.5
     expect(true).toBe(true);
   });
 
-  test('replace returns false when index exceeds array length', async () => {
+  test('replace method edge cases', async () => {
     const testFn = wrapWithNameAsync(async (testCase: TestCase) => {
       try {
-        // Make some initial choices to get a result
         const n = testCase.choice(10n);
         if (n > 5n) {
           testCase.markStatus(Status.INTERESTING);
@@ -803,15 +802,16 @@ targetingScore: 0.5
       }
     });
 
-    // Run the test to get a failure case
     const state = new TestingState(new Random(1234), testFn, 100);
     await state.testFunction(TestCase.forChoices([6n]));
 
-    // Try to replace at an index beyond array bounds
-    await state.shrink();
-    
-    // Test passes if shrink completes without error
-    expect(state.result).toBeDefined();
+    // Test index beyond array length
+    const result = await state.replace({5: 0n}); // Index 5 is beyond the length of [6n]
+    expect(result).toBe(false);
+
+    // Test error when this.result is undefined
+    state.result = undefined;
+    await expect(state.replace({0: 0n})).rejects.toThrow('should have a result here');
   });
   test('failure from hypothesis 1', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
