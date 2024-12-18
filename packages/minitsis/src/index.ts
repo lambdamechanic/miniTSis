@@ -939,7 +939,6 @@ export function tuples<T extends unknown[]>(
   }, `tuples(${possibilities.map(p => p.toString()).join(', ')})`);
 }
 
-
 export async function binSearchDown(
   lo: bigint,
   hi: bigint,

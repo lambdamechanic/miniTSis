@@ -11,7 +11,7 @@
     "keywords": [],
     "scripts": {
         "build": "tsup src/index.ts --format cjs,esm --dts",
-        "test": "jest",
+        "test": "jest --coverage",
         "test:watch": "jest --watch",
         "compile": "tsc",
         "prepare": "npm run compile",
