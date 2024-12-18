@@ -789,6 +789,12 @@ targetingScore: 0.5
   });
 
   test('replace method edge cases', async () => {
+    class TestableState extends TestingState {
+      public async testReplace(values: {[key: number]: bigint}): Promise<boolean> {
+        return await this.replace(values);
+      }
+    }
+
     const testFn = wrapWithNameAsync(async (testCase: TestCase) => {
       try {
         const n = testCase.choice(10n);
@@ -802,16 +808,16 @@ targetingScore: 0.5
       }
     });
 
-    const state = new TestingState(new Random(1234), testFn, 100);
+    const state = new TestableState(new Random(1234), testFn, 100);
     await state.testFunction(TestCase.forChoices([6n]));
 
     // Test index beyond array length
-    const result = await state.replace({5: 0n}); // Index 5 is beyond the length of [6n]
+    const result = await state.testReplace({5: 0n}); // Index 5 is beyond the length of [6n]
     expect(result).toBe(false);
 
     // Test error when this.result is undefined
     state.result = undefined;
-    await expect(state.replace({0: 0n})).rejects.toThrow('should have a result here');
+    await expect(state.testReplace({0: 0n})).rejects.toThrow('should have a result here');
   });
   test('failure from hypothesis 1', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
