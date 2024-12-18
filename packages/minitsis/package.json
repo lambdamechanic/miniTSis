@@ -12,6 +12,7 @@
     "scripts": {
         "build": "tsup src/index.ts --format cjs,esm --dts",
         "test": "jest",
+        "test:watch": "jest --watch",
         "compile": "tsc",
         "prepare": "npm run compile",
         "pretest": "npm run compile"
