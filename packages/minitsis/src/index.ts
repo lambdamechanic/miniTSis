@@ -248,7 +248,7 @@ export class TestingState {
 
     let prev;
     while (prev === undefined || !bigintArraysEqual(prev, this.result)) {
-      prev = this.result ? [...this.result] : [];
+      prev = [...this.result];
 
       //      for (let k = 8; k > 0; k /= 2) {
       for (let k = this.result.length; k > 0; k -= 1) {
