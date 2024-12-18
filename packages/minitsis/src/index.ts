@@ -241,17 +241,8 @@ export class TestingState {
       return;
     }
 
-    const cached = new CachedTestFunction(this.testFunction.bind(this));
-
-    const consider = async (choices: bigint[]): Promise<boolean> => {
-      if (bigintArraysEqual(choices, this.result)) {
-        return true;
-      }
-      return (await cached.call(choices)) === Status.INTERESTING;
-    };
-
     /* istanbul ignore if */
-    if (!(await consider(this.result))) {
+    if (!(await this.consider(this.result))) {
       throw new Error('current result inconsiderable');
     }
 
@@ -267,10 +258,10 @@ export class TestingState {
               ...this.result.slice(0, i),
               ...this.result.slice(i + k),
             ];
-            if (!(await consider(attempt))) {
+            if (!(await this.consider(attempt))) {
               if (i > 0 && attempt[i - 1] > 0) {
                 attempt[i - 1]--;
-                if (await consider(attempt)) {
+                if (await this.consider(attempt)) {
                   i++;
                 }
               }
@@ -280,32 +271,11 @@ export class TestingState {
         }
       }
 
-      const replace = async (values: {
-        [key: number]: bigint;
-      }): Promise<boolean> => {
-        /* istanbul ignore if */ // Type checking ensures this
-        if (!this.result) {
-          throw new Error('should have a result here');
-        }
-        const attempt = [...this.result];
-        for (const [i, v] of Object.entries(values)) {
-          const index = parseInt(i);
-          if (index >= attempt.length) {
-            return false;
-          }
-          attempt[index] = v;
-        }
-        // console.log(`lengths   ${attempt.length} and result ${this.result.length}`)
-        // console.log(`attempt is ${attempt}`);
-        // console.log(`result is ${this.result}`);
-        return await consider(attempt);
-      };
-
       for (let k = this.result.length; k > 0; k -= 1) {
         //for (let k = 8; k > 1; k /= 2) {
         for (let i = this.result.length - k; i >= 0; i--) {
           if (
-            await replace(
+            await this.replace(
               Object.fromEntries(
                 Array.from({length: k}, (_, idx) => [i + idx, BigInt(0)])
               )
@@ -322,7 +292,7 @@ export class TestingState {
         await binSearchDown(
           BigInt(0),
           this.result[i],
-          async (v: bigint) => await replace({[i]: v})
+          async (v: bigint) => await this.replace({[i]: v})
         );
       }
       // First try deleting chunks of choices
@@ -395,6 +365,29 @@ export class TestingState {
       this.validTestCases < this.maxExamples &&
       this.calls < this.maxExamples * 10
     );
+  }
+
+  private async consider(choices: bigint[]): Promise<boolean> {
+    if (bigintArraysEqual(choices, this.result)) {
+      return true;
+    }
+    const cached = new CachedTestFunction(this.testFunction.bind(this));
+    return (await cached.call(choices)) === Status.INTERESTING;
+  }
+
+  private async replace(values: {[key: number]: bigint}): Promise<boolean> {
+    if (!this.result) {
+      throw new Error('should have a result here');
+    }
+    const attempt = [...this.result];
+    for (const [i, v] of Object.entries(values)) {
+      const index = parseInt(i);
+      if (index >= attempt.length) {
+        return false;
+      }
+      attempt[index] = v;
+    }
+    return await this.consider(attempt);
   }
 }
 export type ChoiceMap = Map<bigint, ChoiceMap | Status>;
