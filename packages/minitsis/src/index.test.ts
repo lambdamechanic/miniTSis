@@ -1,10 +1,30 @@
+class MapDB implements Database {
+  private data: Map<string, Uint8Array>;
+
+  constructor() {
+    this.data = new Map();
+  }
+
+  async set(key: string, value: Uint8Array): Promise<void> {
+    this.data.set(key, value);
+  }
+
+  async get(key: string): Promise<Uint8Array | null> {
+    return this.data.has(key) ? this.data.get(key)! : null;
+  }
+
+  async delete(key: string): Promise<void> {
+    this.data.delete(key);
+  }
+}
+
 import {
   CachedTestFunction,
-  DBWrapper,
   Frozen,
-  MapDB,
   Random,
   Status,
+  StopTest,
+  type ChoiceMap,
   TestCase,
   TestingState,
   Unsatisfiable,
@@ -20,19 +40,91 @@ import {
   toNumber,
   tuples,
   uuids,
+  bigintArraysEqual,
+  smallerThan,
 
   // for debugging only
-  getBufferSize,
-  setBufferSize
-
+  // getBufferSize,
+  setBufferSize,
 } from './index';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import {Database, IDataStore} from 'minitsis-datastore';
-import {BrowserDataStore} from 'minitsis-browser'
+
+class DBWrapper implements Database {
+  private dataStore: IDataStore<string>;
+
+  constructor(dataStore: IDataStore<string>) {
+    this.dataStore = dataStore;
+  }
+
+  async set(key: string, value: Uint8Array): Promise<void> {
+    const base64Value = toBase64(value);
+    await this.dataStore.set(key, base64Value);
+  }
+
+  async get(key: string): Promise<Uint8Array | null> {
+    const base64Value = await this.dataStore.get(key);
+    return base64Value ? fromBase64(base64Value) : null;
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.dataStore.delete(key);
+  }
+  
+  async count(): Promise<number> {
+    return await this.dataStore.count();
+  }
+}
+
+function toBase64(arrayBuffer: Uint8Array): string {
+  return Buffer.from(arrayBuffer).toString('base64');
+}
+
+function fromBase64(base64String: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(base64String, 'base64'));
+}
+import {BrowserDataStore} from 'minitsis-browser';
 import {NodeDataStore} from 'minitsis-node';
+
+// Function to create a "fake" ChoiceMap that throws when `.get` is called
+function createFakeChoiceMap(): ChoiceMap {
+  const handler = {
+    get(target: any, prop: PropertyKey, receiver: any): any {
+      if (prop === 'get') {
+        return function () {
+          // https://github.com/lambdamechanic/miniTSis/issues/1
+          // throw new Error("'.get' method was called on a fake ChoiceMap");
+        };
+      } else if (prop === 'set') {
+        return function (a) {
+          return undefined;
+        };
+      }
+
+      return Reflect.get(target, prop, receiver);
+    },
+  };
+
+  const fakeMap = new Map<bigint, ChoiceMap | Status>();
+  const proxy = new Proxy(fakeMap, handler);
+  return proxy as ChoiceMap;
+}
+
+function serializeChoiceMap(choiceMap: ChoiceMap): any {
+  const obj = {};
+  for (const [key, value] of choiceMap) {
+    if (value instanceof Map) {
+      obj[key.toString()] = serializeChoiceMap(value); // Recursively serialize nested ChoiceMaps
+    } else {
+      // For enum values, you might want to store them in a distinguishable way
+      obj[key.toString()] = value;
+    }
+  }
+  return obj;
+}
 
 const _nodejs =
   typeof process !== 'undefined' && process.versions && process.versions.node;
@@ -49,13 +141,12 @@ export function createDataStore<U>(dbPath: string): IDataStore<U> {
   }
 }
 
-
 // const originalConsoleLog = console.log;
 let logMock: jest.SpyInstance;
 
 beforeEach(() => {
   // set normal buffer size
-  setBufferSize(8*1024);
+  setBufferSize(8 * 1024);
   // Spy on console.log and keep a reference to the spy
   logMock = jest.spyOn(console, 'log').mockImplementation();
 });
@@ -98,14 +189,14 @@ describe('Minithesis Tests', () => {
         const ls = testCase.any(lists(integers(0, 10000)));
         if (sum(ls) > 1000) {
           // Logic to fail the test, expecting minithesis to have logged the value generation
-	  throw new Error('Assertion failed: sum(ls) <= 1000')
+          throw new Error('Assertion failed: sum(ls) <= 1000');
         }
       });
 
       const database = new MapDB();
-      await expect(
-        runTest(100, seed, database, false)(testFn)
-      ).rejects.toThrow('Assertion failed: sum(ls) <= 1000');
+      await expect(runTest(100, seed, database, false)(testFn)).rejects.toThrow(
+        'Assertion failed: sum(ls) <= 1000'
+      );
 
       // Verify the log includes the expected message from minithesis logic, not the testFn
       expect(logMock).toHaveBeenCalledWith(
@@ -115,7 +206,6 @@ describe('Minithesis Tests', () => {
   );
 
   test('reduces additive pairs', async () => {
-
     const database = new MapDB();
 
     const testFn = (testCase: TestCase) => {
@@ -147,12 +237,8 @@ describe('Minithesis Tests', () => {
       expect(n).not.toBe(0);
     };
 
-    await expect(
-      runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn))
-    );
-
+    await expect(runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn)));
   });
-
 
   test('error on too strict precondition', async () => {
     const testFn = (testCase: TestCase) => {
@@ -173,9 +259,9 @@ describe('Minithesis Tests', () => {
     };
     setBufferSize(10);
 
-    await expect(
-      runTest(5, 1234, new MapDB(), true)(testFn)
-    ).rejects.toThrow(Unsatisfiable);
+    await expect(runTest(5, 1234, new MapDB(), true)(testFn)).rejects.toThrow(
+      Unsatisfiable
+    );
   });
 
   describe('test reuses results from the database', () => {
@@ -195,7 +281,7 @@ describe('Minithesis Tests', () => {
     });
 
     const run = async () => {
-      const db = new DBWrapper(createDataStore<string>(tempDirPath + "/db"));
+      const db = new DBWrapper(createDataStore<string>(tempDirPath + '/db'));
       const testFn = (testCase: TestCase) => {
         count += 1;
         const choice = testCase.choice(BigInt(10000));
@@ -264,9 +350,9 @@ describe('Minithesis Tests', () => {
       });
 
       const database = new MapDB(); // Assuming MapDB is an implementation of Database
-      await expect(
-        runTest(200, seed, database, true)(testFn)
-      ).rejects.toThrow('Found the local maximum at (500, 500)');
+      await expect(runTest(200, seed, database, true)(testFn)).rejects.toThrow(
+        'Found the local maximum at (500, 500)'
+      );
     }
   );
 
@@ -294,10 +380,16 @@ describe('Minithesis Tests', () => {
     expect(logMock).toHaveBeenCalledTimes(2);
 
     // Verify that logMock was called with the expected string on the first call
-    expect(logMock).toHaveBeenNthCalledWith(1, expect.stringContaining('choice(1000): 1000'));
+    expect(logMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('choice(1000): 1000')
+    );
 
     // Verify that logMock was called with the expected string on the second call
-    expect(logMock).toHaveBeenNthCalledWith(2, expect.stringContaining('choice(1000): 1000'));
+    expect(logMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('choice(1000): 1000')
+    );
   });
   test('can target a score upwards without failing', async () => {
     let maxScore = 0;
@@ -334,7 +426,9 @@ describe('Minithesis Tests', () => {
     ).rejects.toThrow('Score 10000 should be less than 10000');
 
     expect(logMock).toHaveBeenCalledTimes(3);
-    expect(logMock).toHaveBeenCalledWith(expect.stringContaining('choice(1000): 0'));
+    expect(logMock).toHaveBeenCalledWith(
+      expect.stringContaining('choice(1000): 0')
+    );
     await expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('choice(10000): 10000')
     );
@@ -382,7 +476,7 @@ describe('Minithesis Tests', () => {
       runTest(1000, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: weighted(0.5) should be true');
 
-//    Verify the log includes the expected message
+    //    Verify the log includes the expected message
     expect(logMock).toHaveBeenCalledWith(
       expect.stringContaining('weighted(0.5): false')
     );
@@ -400,7 +494,7 @@ describe('Minithesis Tests', () => {
     expect(() => tc.choice(11n)).toThrow(Frozen);
 
     // Using Jest's expect to assert that calling forcedChoice on a frozen TestCase throws Frozen
-    expect(() => tc.forcedChoice(12n)).toThrow(Frozen)
+    expect(() => tc.forcedChoice(12n)).toThrow(Frozen);
   });
 
   // this doesn't actually error, because we are using bigints.
@@ -420,15 +514,14 @@ describe('Minithesis Tests', () => {
   });
 
   test('uuids are different', async () => {
-    const testFn = ((tc:TestCase) => {
+    const testFn = (tc: TestCase) => {
       const a = tc.any(uuids());
       const b = tc.any(uuids());
       if (a === b) {
-	throw new Error("non unique identifiers!");
+        throw new Error('non unique identifiers!');
       }
-    });
+    };
     await runTest(100, 1234, new MapDB(), true)(wrapWithName(testFn));
-
   });
   test('can draw mixture', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
@@ -476,18 +569,18 @@ describe('Minithesis Tests', () => {
     const testFn = wrapWithName((tc: TestCase) => {
       tc.any(nothing());
     });
-    await expect(
-      runTest(100, 1234, new MapDB(), true)(testFn)
-    ).rejects.toThrow(Unsatisfiable);
+    await expect(runTest(100, 1234, new MapDB(), true)(testFn)).rejects.toThrow(
+      Unsatisfiable
+    );
   });
 
   test('cannot witness empty mix of', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
       tc.any(mixOf());
     });
-    await expect(
-      runTest(100, 1234, new MapDB(), true)(testFn)
-    ).rejects.toThrow(Unsatisfiable);
+    await expect(runTest(100, 1234, new MapDB(), true)(testFn)).rejects.toThrow(
+      Unsatisfiable
+    );
   });
 
   test('target and reduce', async () => {
@@ -502,7 +595,9 @@ describe('Minithesis Tests', () => {
     await expect(
       runTest(100, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Assertion failed: m <= 99900');
-    expect(logMock).toHaveBeenCalledWith(expect.stringContaining("choice(100000): 99901"));
+    expect(logMock).toHaveBeenCalledWith(
+      expect.stringContaining('choice(100000): 99901')
+    );
   });
 
   test('impossible weighted', async () => {
@@ -526,65 +621,68 @@ describe('Minithesis Tests', () => {
   test('lists get shrunk eventually', async () => {
     const testFn = (tc: TestCase) => {
       // intent is to see if we can properly shrink the original list down.
-      const m = tc.any(lists(integers(0, 100))
-	.bind((n) =>
-	  lists(integers(0,40))
-	    .map((o) => [...o,...n,...o]))
-	.bind((p) =>
-	  lists(integers(0,40))
-	    .map((o) => [...o,...p,...o])));
-
+      const m = tc.any(
+        lists(integers(0, 100))
+          .bind(n => lists(integers(0, 40)).map(o => [...o, ...n, ...o]))
+          .bind(p => lists(integers(0, 40)).map(o => [...o, ...p, ...o]))
+      );
 
       if (m.includes(93)) {
-	throw new Error(`Failure: length (${m.length})`);
+        throw new Error(`Failure: length (${m.length})`);
       }
     };
     await expect(
       runTest(1000, 1234, new MapDB(), false)(wrapWithName(testFn))
-    ).rejects.toThrow("Failure: length (1)");
+    ).rejects.toThrow('Failure: length (1)');
   });
-function wrapWithNameAsync(
-  testFn: (testCase: TestCase) => Promise<void>
-): (testCase: TestCase) => Promise<void> {
-  // const currentTestName = expect.getState().currentTestName;
-  const currentTestName = "hardcodedOracleTest";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (testFn as any).testName = currentTestName;
-  return testFn;
-}
+  function wrapWithNameAsync(
+    testFn: (testCase: TestCase) => Promise<void>
+  ): (testCase: TestCase) => Promise<void> {
+    // const currentTestName = expect.getState().currentTestName;
+    const currentTestName = 'hardcodedOracleTest';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (testFn as any).testName = currentTestName;
+    return testFn;
+  }
 
-
-
-
+  test('runTestAsync throws when database is not provided', async () => {
+    const testFn = wrapWithNameAsync(async (tc: TestCase) => {
+      tc.any(integers(1, 2));
+    });
+    await expect(
+      runTestAsync(100, 1234)(testFn)
+    ).rejects.toThrow('need a db');
+  });
 
   test('alertOnFailure is called', async () => {
     const testFn = wrapWithNameAsync(async (tc: TestCase) => {
-      const m = tc.any(integers(1,2));
-      throw new Error("always fail");
+      const m = tc.any(integers(1, 2));
+      throw new Error('always fail');
     });
     await expect(
-      runTestAsync(100, 1234, new MapDB(), false,
-		   (async (testCase) => {
-		     throw new Error("QUITTING MESSILY");
-		   })
-		  )(testFn)
-    ).rejects.toThrow("QUITTING MESSILY");
+      runTestAsync(100, 1234, new MapDB(), false, async testCase => {
+        throw new Error('QUITTING MESSILY');
+      })(testFn)
+    ).rejects.toThrow('QUITTING MESSILY');
   });
 
-
   test('integers respects minimum', async () => {
-    const testFn = async (tc: TestCase) =>  {
+    const testFn = async (tc: TestCase) => {
       const n = tc.any(integers(1, 50));
       const m = tc.any(integers(n, 100));
       if (m < n) {
-	throw new Error('Failure in integers(1, 100)');
+        throw new Error('Failure in integers(1, 100)');
       }
     };
     await expect(
-      await runTestAsync(10000, 1234, new MapDB(), false)(wrapWithNameAsync(testFn))
+      await runTestAsync(
+        10000,
+        1234,
+        new MapDB(),
+        false
+      )(wrapWithNameAsync(testFn))
     );
   });
-
 
   test('guaranteed weighted', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
@@ -609,9 +707,168 @@ function wrapWithNameAsync(
     await runTest(100, 1234, new MapDB(), false)(testFn);
   });
 
+  test('toNumber throws on out of bounds values', () => {
+    // Test too high
+    expect(() => toNumber(BigInt(Number.MAX_SAFE_INTEGER) + 1n)).toThrow(
+      'BigInt value is too large to be safely converted to a Number'
+    );
+    
+    // Test too low
+    expect(() => toNumber(BigInt(Number.MIN_SAFE_INTEGER) - 1n)).toThrow(
+      'BigInt value is too low to be safely converted to a Number'
+    );
+  });
+
+  test('TestCase throws on negative choice argument', () => {
+    const tc = new TestCase([], new Random(1234), Infinity);
+    expect(() => tc.choice(-1n)).toThrow('Invalid choice -1');
+  });
+
+  test('randBigInt validation', () => {
+    const random = new Random(1234);
+    // Test max < min
+    expect(() => random.randBigInt(10n, 5n)).toThrow('min must be less than or equal to max');
+    // Test equal values works fine
+    expect(() => random.randBigInt(5n, 5n)).not.toThrow();
+    expect(random.randBigInt(5n, 5n)).toBe(5n);
+  });
+
+  test('randRange generates numbers within bounds', () => {
+    const random = new Random(1234);
+    const min = 5;
+    const max = 10;
+    for (let i = 0; i < 100; i++) {
+      const result = random.randRange(min, max);
+      expect(result).toBeGreaterThanOrEqual(min);
+      expect(result).toBeLessThan(max);
+    }
+  });
+
+  test('bigintArraysEqual comparison', () => {
+    // Test equal arrays
+    expect(bigintArraysEqual([1n, 2n, 3n], [1n, 2n, 3n])).toBe(true);
+    // Test different lengths
+    expect(bigintArraysEqual([1n, 2n], [1n, 2n, 3n])).toBe(false);
+    // Test different values
+    expect(bigintArraysEqual([1n, 2n, 3n], [1n, 2n, 4n])).toBe(false);
+    // Test undefined arrays
+    expect(bigintArraysEqual(undefined, [1n])).toBe(false);
+    expect(bigintArraysEqual([1n], undefined)).toBe(false);
+    expect(bigintArraysEqual(undefined, undefined)).toBe(false);
+  });
+
+  test('smallerThan comparison', () => {
+    // Test first array longer than second
+    expect(smallerThan([1n, 2n, 3n], [1n, 2n])).toBe(false);
+    // Test arrays of same length and content
+    expect(smallerThan([1n, 2n, 3n], [1n, 2n, 3n])).toBe(false);
+    // Test first array smaller than second
+    expect(smallerThan([1n, 2n], [1n, 2n, 3n])).toBe(true);
+  });
+
   test('forced choice bounds', async () => {
     const tc = new TestCase([], new Random(1234), Infinity);
     expect(() => tc.forcedChoice(2n ** 64n)).toThrowError();
+  });
+
+  test('TestCase defaults maxSize to Infinity when not specified', () => {
+    const random = new Random(12345);
+    const testCase = new TestCase([1n, 2n], random);
+    expect(testCase.maxSize).toBe(Infinity);
+  });
+
+  test('TestCase toString outputs expected format', () => {
+    const random = new Random(12345);
+    const testCase = new TestCase([1n, 2n], random, 100, true);
+    testCase.choices = [3n, 4n];
+    testCase.status = Status.VALID;
+    testCase.depth = 1;
+    testCase.targetingScore = 0.5;
+
+    const expected = `TestCase {
+prefix: [1, 2],
+random: Random { seed: 12345 },
+maxSize: 100,
+choices: [3, 4],
+status: VALID,
+printResults: true,
+depth: 1,
+targetingScore: 0.5
+}`;
+
+    expect(testCase.toString()).toBe(expected);
+  });
+
+  test('runTestAsync defaults maxExamples to 100', async () => {
+    const testFn = wrapWithNameAsync(async (testCase: TestCase) => {
+      const n = testCase.choice(10n);
+      if (n > 5n) {
+        throw new Error('Found interesting case');
+      }
+    });
+
+    await expect(
+      runTestAsync(undefined, 1234, new MapDB())(testFn)
+    ).rejects.toThrow('Found interesting case');
+  });
+
+  test('runTest defaults quiet to false', async () => {
+    const testFn = wrapWithName((testCase: TestCase) => {
+      const n = testCase.choice(10n);
+      if (n > 5n) {
+        throw new Error('Found interesting case');
+      }
+    });
+
+    await expect(
+      runTest(100, 1234, new MapDB())(testFn)
+    ).rejects.toThrow('Found interesting case');
+  });
+
+  test('targeting gives up after too many examples', async () => {
+    const testFn = wrapWithName((testCase: TestCase) => {
+      const n = testCase.choice(1000n);
+      testCase.target(Number(n));
+      // Never mark as interesting, so targeting should eventually give up
+    });
+
+    // Use a small maxExamples to ensure targeting gives up quickly
+    await runTest(5, 1234, new MapDB(), false)(testFn);
+    
+    // Test passes if runTest completes without finding an interesting case
+    expect(true).toBe(true);
+  });
+
+  test('replace method edge cases', async () => {
+    class TestableState extends TestingState {
+      public async testReplace(values: {[key: number]: bigint}): Promise<boolean> {
+        return await this.replace(values);
+      }
+    }
+
+    const testFn = wrapWithNameAsync(async (testCase: TestCase) => {
+      try {
+        const n = testCase.choice(10n);
+        if (n > 5n) {
+          testCase.markStatus(Status.INTERESTING);
+        }
+      } catch (error) {
+        if (!(error instanceof StopTest)) {
+          throw error;
+        }
+      }
+    });
+
+    const state = new TestableState(new Random(1234), testFn, 100);
+    await state.testFunction(TestCase.forChoices([6n]));
+
+    // Test index beyond array length
+    const result = await state.testReplace({5: 0n}); // Index 5 is beyond the length of [6n]
+    expect(result).toBe(false);
+
+    // Test error when this.result is undefined
+    state.result = undefined;
+    await expect(state.testReplace({0: 0n})).rejects.toThrow('should have a result here');
   });
   test('failure from hypothesis 1', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
@@ -697,4 +954,4 @@ function wrapWithNameAsync(
       runTest(100, 1234, new MapDB(), false)(wrapWithName(testFn))
     ).rejects.toThrow('Predicate failed: b (6) - a (0) > 5');
   });
-  });
+});

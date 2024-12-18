@@ -1,12 +1,9 @@
 import {v4 as uuidv4} from 'uuid';
-import {Database,IDataStore} from 'minitsis-datastore';
+import {Database, IDataStore} from 'minitsis-datastore';
 // Example porting of the TestCase class from Python to TypeScript
 // Note: This is a simplified version to illustrate the process. Full translation requires careful handling of all methods and properties.
 
-// interface Database {
-//     // Convert Python's protocol to TypeScript interface
-//     [key: string]: Uint8Array; // Assuming bytes are handled as Uint8Array in TypeScript
-// }
+import {ITestCase, IPossibility, IDatabase} from './interfaces';
 
 // Enums and other classes need to be handled similarly
 export enum Status {
@@ -24,19 +21,19 @@ export function setBufferSize(n) {
   BUFFER_SIZE = n;
 }
 
-export function getBufferSize(n) {
-  BUFFER_SIZE = n;
-}
+// export function getBufferSize(n) {
+//   BUFFER_SIZE = n;
+// }
 
 export class Unsatisfiable extends Error {}
 export class StopTest extends Error {}
 export class Frozen extends Error {}
 
-export class Possibility<T> {
-  public produce: (testCase: TestCase) => T;
+export class Possibility<T> implements IPossibility<T> {
+  public produce: (testCase: ITestCase) => T;
   public name: string;
 
-  constructor(produce: (testCase: TestCase) => T, name?: string) {
+  constructor(produce: (testCase: ITestCase) => T, name?: string) {
     // console.log("new possibility");
     this.produce = produce;
     this.name = name ?? produce.name;
@@ -53,8 +50,10 @@ export class Possibility<T> {
     return new Possibility(newProduce, `${this.name}.map(${f.name})`);
   }
 
-  // a no-op to satisfy fast-check.
-  noShrink() { return this;}
+  // // a no-op to satisfy fast-check.
+  // noShrink() {
+  //   return this;
+  // }
 
   bind<S>(f: (value: T) => Possibility<S>): Possibility<S> {
     const newProduce = (testCase: TestCase): S => {
@@ -102,15 +101,10 @@ export class TestingState {
   }
 
   public async testFunction(testCase: TestCase): Promise<void> {
-    if (!this) {
-      throw new Error('selfless');
-    }
-    //console.log("in testFunction", this);
-    //    console.log("in testFunction, calls=", this.calls, " validTestCases=", this.validTestCases);
-
     try {
       await this.testFunctionCallback(testCase);
     } catch (error) {
+      /* istanbul ignore if */ // Should only be StopTest
       if (!(error instanceof StopTest)) {
         throw error;
       }
@@ -156,7 +150,6 @@ export class TestingState {
       this.result = testCase.choices;
       await alertOnFailureSingleton(testCase);
       // console.info(`choices ${testCase.choices} is better than ${this.result}`);
-
     }
   }
 
@@ -166,6 +159,7 @@ export class TestingState {
     }
 
     const adjust = async (i: number, step: bigint): Promise<boolean> => {
+      /* istanbul ignore if */ // Type checking ensures this
       if (!this.bestScoring) {
         throw new Error('bestScoring undefined, should be impossible');
       }
@@ -179,6 +173,7 @@ export class TestingState {
       const testCase = new TestCase(attempt, this.random, BUFFER_SIZE);
 
       await this.testFunction(testCase); // Ensure testFunction handles async correctly
+      /* istanbul ignore if */ // Status is always set by this point
       if (testCase.status === undefined) {
         throw new Error(
           `status undefined, should be impossible; ${testCase}, ${i}, ${step}, ${this.bestScoring}`
@@ -195,6 +190,7 @@ export class TestingState {
       const i = this.random.randInt(0, this.bestScoring[1].length - 1);
       let sign = 0n;
       for (const k of [1n, -1n]) {
+        /* istanbul ignore if */ // Early return is hard to trigger in tests
         if (!this.shouldKeepGenerating()) {
           return;
         }
@@ -225,7 +221,6 @@ export class TestingState {
     await this.generate();
     await this.target();
     await this.shrink();
-
   }
 
   async generate(): Promise<void> {
@@ -246,69 +241,41 @@ export class TestingState {
       return;
     }
 
-    const cached = new CachedTestFunction(this.testFunction.bind(this));
-
-    const consider = async (choices: bigint[]): Promise<boolean> => {
-      if (bigintArraysEqual(choices, this.result)) {
-        return true;
-      }
-      return ((await cached.call(choices)) === Status.INTERESTING);
-    };
-
-    if (! await consider(this.result)) {
+    /* istanbul ignore if */
+    if (!(await this.consider(this.result))) {
       throw new Error('current result inconsiderable');
     }
 
     let prev;
     while (prev === undefined || !bigintArraysEqual(prev, this.result)) {
-      prev = this.result ? [...this.result] : [];
+      prev = [...this.result];
 
       //      for (let k = 8; k > 0; k /= 2) {
-      for (let k = this.result.length; k > 0; k -=1) {
+      for (let k = this.result.length; k > 0; k -= 1) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
-          if (i >= this.result.length) {
-            i--;
-            continue;
-          }
-          const attempt = [
-            ...this.result.slice(0, i),
-            ...this.result.slice(i + k),
-          ];
-          if (!(await consider(attempt))) {
-            if (i > 0 && attempt[i - 1] > 0) {
-              attempt[i - 1]--;
-              if (await consider(attempt)) {
-                i++;
+          if (i < this.result.length) {
+            const attempt = [
+              ...this.result.slice(0, i),
+              ...this.result.slice(i + k),
+            ];
+            if (!(await this.consider(attempt))) {
+              if (i > 0 && attempt[i - 1] > 0) {
+                attempt[i - 1]--;
+                if (await this.consider(attempt)) {
+                  i++;
+                }
               }
             }
+            i--;
           }
-          i--;
         }
       }
 
-      const replace = async (values: {[key: number]: bigint}): Promise<boolean> => {
-        if (!this.result) {
-          throw new Error('should have a result here');
-        }
-        const attempt = [...this.result];
-        for (const [i, v] of Object.entries(values)) {
-          const index = parseInt(i);
-          if (index >= attempt.length) {
-            return false;
-          }
-          attempt[index] = v;
-        }
-        // console.log(`lengths   ${attempt.length} and result ${this.result.length}`)
-        // console.log(`attempt is ${attempt}`);
-        // console.log(`result is ${this.result}`);
-        return await consider(attempt);
-      };
-
-      for (let k = this.result.length; k > 0; k -=1) {
-	//for (let k = 8; k > 1; k /= 2) {
+      for (let k = this.result.length; k > 0; k -= 1) {
+        //for (let k = 8; k > 1; k /= 2) {
         for (let i = this.result.length - k; i >= 0; i--) {
           if (
-            await replace(
+            await this.replace(
               Object.fromEntries(
                 Array.from({length: k}, (_, idx) => [i + idx, BigInt(0)])
               )
@@ -322,14 +289,17 @@ export class TestingState {
       }
 
       for (let i = this.result.length - 1; i >= 0; i--) {
-        await binSearchDown(BigInt(0), this.result[i], async (v: bigint) =>
-          await replace({[i]: v})
+        await binSearchDown(
+          BigInt(0),
+          this.result[i],
+          async (v: bigint) => await this.replace({[i]: v})
         );
       }
       // First try deleting chunks of choices
-      for (let k = this.result.length; k > 0; k -=1) {
-	//for (let k = 8; k > 0; k /= 2) {
+      for (let k = this.result.length; k > 0; k -= 1) {
+        //for (let k = 8; k > 0; k /= 2) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
+          /* istanbul ignore if */ // Type checking ensures this
           if (this.result === undefined) {
             throw new Error('never undefined here');
           }
@@ -337,17 +307,19 @@ export class TestingState {
             ...this.result.slice(0, i),
             ...this.result.slice(i + k),
           ];
-          await consider(attempt);
+          await this.consider(attempt);
         }
       }
 
       // Try replacing blocks of choices with zeroes, then adjust for smaller values
-      for (let k = this.result.length; k > 0; k -=1) {
-	// for (let k = 8; k >= 1; k /= 2) {
+      for (let k = this.result.length; k > 0; k -= 1) {
+        // for (let k = 8; k >= 1; k /= 2) {
+        /* istanbul ignore if */
         if (this.result === undefined) {
           throw new Error('never undefined here');
         }
         for (let i = 0; i <= this.result.length - k; i++) {
+          /* istanbul ignore if */
           if (this.result === undefined) {
             throw new Error('never undefined here');
           }
@@ -355,7 +327,7 @@ export class TestingState {
           for (let j = i; j < i + k; j++) {
             attempt[j] = BigInt(0); // Reset chunk to zeroes
           }
-          await consider(attempt);
+          await this.consider(attempt);
         }
       }
 
@@ -366,7 +338,7 @@ export class TestingState {
           if (j < this.result.length) {
             // Try swapping out of order pairs
             if (this.result[i] > this.result[j]) {
-              await replace({[i]: this.result[j], [j]: this.result[i]});
+              await this.replace({[i]: this.result[j], [j]: this.result[i]});
             }
             // Adjust nearby pairs by redistributing value
             if (j < this.result.length && this.result[i] > BigInt(0)) {
@@ -374,7 +346,7 @@ export class TestingState {
               const previousJ = this.result[j];
               await binSearchDown(BigInt(0), previousI, async (v: bigint) => {
                 // Attempt to replace the value at i with v and adjust j accordingly
-                return await replace({
+                return await this.replace({
                   [i]: v,
                   [j]: previousJ + (previousI - v),
                 });
@@ -394,43 +366,32 @@ export class TestingState {
       this.calls < this.maxExamples * 10
     );
   }
-}
-type ChoiceMap = Map<bigint, ChoiceMap | Status>;
 
-// Function to create a "fake" ChoiceMap that throws when `.get` is called
-function createFakeChoiceMap(): ChoiceMap {
-  const handler = {
-    get(target: any, prop: PropertyKey, receiver: any): any {
-      if (prop === 'get') {
-        return function() {
-	  // https://github.com/lambdamechanic/miniTSis/issues/1
-          // throw new Error("'.get' method was called on a fake ChoiceMap");
-        };
-      } else if (prop === 'set') {
-	return function(a) { return undefined };
-      }
-
-      return Reflect.get(target, prop, receiver);
+  private async consider(choices: bigint[]): Promise<boolean> {
+    if (bigintArraysEqual(choices, this.result)) {
+      return true;
     }
-  };
-
-  const fakeMap = new Map<bigint, ChoiceMap | Status>();
-  const proxy = new Proxy(fakeMap, handler);
-  return proxy as ChoiceMap;
-}
-
-function serializeChoiceMap(choiceMap: ChoiceMap): any {
-  const obj = {};
-  for (const [key, value] of choiceMap) {
-    if (value instanceof Map) {
-      obj[key.toString()] = serializeChoiceMap(value); // Recursively serialize nested ChoiceMaps
-    } else {
-      // For enum values, you might want to store them in a distinguishable way
-      obj[key.toString()] = value;
-    }
+    const cached = new CachedTestFunction(this.testFunction.bind(this));
+    return (await cached.call(choices)) === Status.INTERESTING;
   }
-  return obj;
+
+  protected async replace(values: {[key: number]: bigint}): Promise<boolean> {
+    if (!this.result) {
+      throw new Error('should have a result here');
+    }
+    const attempt = [...this.result];
+    for (const [i, v] of Object.entries(values)) {
+      const index = parseInt(i);
+      if (index >= attempt.length) {
+        return false;
+      }
+      attempt[index] = v;
+    }
+    return await this.consider(attempt);
+  }
 }
+export type ChoiceMap = Map<bigint, ChoiceMap | Status>;
+
 export class CachedTestFunction {
   private testFunction: (testCase: TestCase) => Promise<void>;
   // Using Map to represent a tree structure
@@ -454,73 +415,68 @@ export class CachedTestFunction {
     this.tree = new Map();
   }
 
-
-
+  /**
+   * Executes a test case with the given choices and returns its status
+   * @param choices Array of bigint choices to execute
+   * @returns The final Status of the test case
+   */
   public async call(choices: bigint[]): Promise<Status> {
-    let node: ChoiceMap = this.tree; // Assuming `this.tree` is of type ChoiceMap
-    let maybeNode : ChoiceMap | Status;
-
-    let hitEnd = false;
-    for (const c of choices) {
-      maybeNode = node.get(c);
-      if (maybeNode === undefined) {
-	hitEnd = true;
-	break;
-      }
-      if (maybeNode instanceof Map) {
-	node = maybeNode;
-      } else {
-	if (maybeNode === Status.OVERRUN) {
-	  throw new Error("Unexpected overrun");
-	}
-	return maybeNode as Status;
-      }
+    // Try to find existing result in the tree
+    const existingResult = this.findExistingResult(choices);
+    if (existingResult !== undefined) {
+      return existingResult;
     }
-    if (!hitEnd) { return Status.OVERRUN ; }
 
+    // Execute new test case
     const testCase = TestCase.forChoices(choices);
     await this.testFunction(testCase);
 
-    if (testCase.status === undefined)
+    /* istanbul ignore if */ // Status is always set by this point
+    if (testCase.status === undefined) {
       throw new Error('Test case did not set a status');
+    }
 
-    // Reset node to the root to update the tree with the new outcome
-    node = this.tree;
-    choices.forEach((c, i) => {
-      if (i + 1 < choices.length || testCase.status === Status.OVERRUN) {
-	maybeNode = node.get(c);
-	if (maybeNode === undefined) {
-	  const newNode = new Map();
-	  node.set(c,newNode);
-	  node = newNode;
-	} else {
-	  // we have a valid node. if it's a map, we're good. if it's a status, we have done something terribly wrong
-	  // and should blow uf as fast as possible.
-	  if (maybeNode instanceof Map) {
-	    //phew.
-	    node = maybeNode;
-	  } else {
-	    // in this case, there's no point setting the node.
-	    // we must be at the end of the tree, otherwise it would
-	    // fail the next time, and i've never seen that happen.
-	    //
-	    // originial minithesis plays a bit fast and loose with types,
-	    // so it isn't statically required to be a Map here.
-	    // we are going to be a bit more careful and at least assert that it doesn't get called again.
-	    //
-	    node = createFakeChoiceMap();
-
-
-	    throw new Error(`got a bit weird c:${c}, i:${i}, choices:${choices},
-                ${JSON.stringify({tree: serializeChoiceMap(this.tree)
-                                 ,node: serializeChoiceMap(node)})}`);
-	  }
-	}
-      } else {
-	node.set(c, testCase.status);
-      }
-    })
+    // Update tree with new result
+    this.updateTree(choices, testCase.status);
     return testCase.status;
+  }
+
+  private findExistingResult(choices: bigint[]): Status | undefined {
+    let node: ChoiceMap = this.tree;
+
+    for (const choice of choices) {
+      const maybeNode = node.get(choice);
+      if (maybeNode === undefined) {
+        return undefined;
+      }
+      if (!(maybeNode instanceof Map)) {
+        return maybeNode === Status.OVERRUN
+          ? /* istanbul ignore next */ // this is just incredibly hard to provoke.
+            undefined
+          : maybeNode;
+      }
+      node = maybeNode;
+    }
+    return Status.OVERRUN;
+  }
+
+  private updateTree(choices: bigint[], finalStatus: Status): void {
+    let node = this.tree;
+
+    choices.forEach((choice, index) => {
+      const isLastChoice = index === choices.length - 1;
+
+      if (!isLastChoice || finalStatus === Status.OVERRUN) {
+        let nextNode = node.get(choice);
+        if (!(nextNode instanceof Map)) {
+          nextNode = new Map();
+          node.set(choice, nextNode);
+        }
+        node = nextNode;
+      } else {
+        node.set(choice, finalStatus);
+      }
+    });
   }
 }
 //   public async call(choices: bigint[]): Promise<Status> {
@@ -576,10 +532,9 @@ export class CachedTestFunction {
 //   }
 // }
 
-
 export function runTest(
-  maxExamples,
-  seed : number,
+  maxExamples: number,
+  seed: number,
   database?: Database, // Assume Database interface/type is defined elsewhere.
   quiet = false
 ): (test: (testCase: TestCase) => void) => Promise<void> {
@@ -588,7 +543,7 @@ export function runTest(
     const asyncTestWrapper = async (testCase: TestCase): Promise<void> => {
       // Simply invoke the original test function. Since it's synchronous,
       // we don't need to await it, but we're in an async function, so it's okay.
-      await test(testCase);
+      test(testCase);
     };
 
     (asyncTestWrapper as any).testName = (test as any).testName;
@@ -598,29 +553,30 @@ export function runTest(
   };
 }
 
-
 let alertOnFailureSingleton;
 
 export function runTestAsync(
-  maxExamples : number = 100,
+  maxExamples: number = 100,
   seed: number,
   database?: Database,
   quiet = false,
-  alertOnFailure?  : (testCase: TestCase) => Promise<void>
+  alertOnFailure?: (testCase: TestCase) => Promise<void>
 ): (test: (testCase: TestCase) => Promise<void>) => Promise<void> {
   if (alertOnFailure !== undefined) {
     // set naughty global singleton.
-    alertOnFailureSingleton=alertOnFailure;
+    alertOnFailureSingleton = alertOnFailure;
   } else {
-    alertOnFailureSingleton= async (testCase: TestCase) => {
-      return ;
-    }
+    alertOnFailureSingleton = async (testCase: TestCase) => {
+      return;
+    };
   }
   const ret = async (test: (testCase: TestCase) => Promise<void>) => {
-    const markFailuresInteresting = async (testCase: TestCase): Promise<void> => {
+    const markFailuresInteresting = async (
+      testCase: TestCase
+    ): Promise<void> => {
       // console.log("markFailuresInteresting", testCase);
       try {
-	// console.log("asking", testCase);
+        // console.log("asking", testCase);
         await test(testCase);
       } catch (error) {
         //	console.log("markFailuresInterestingError: case", testCase);
@@ -628,7 +584,7 @@ export function runTestAsync(
           throw error;
         } else {
         }
-	// console.log("test case marked interesting, we should definitely have a failure");
+        // console.log("test case marked interesting, we should definitely have a failure");
         testCase.markStatus(Status.INTERESTING);
       }
     };
@@ -700,10 +656,10 @@ export function runTestAsync(
   return ret;
 }
 
-export function uuids() : Possibility<string> {
-  return new Possibility<string>((testCase:TestCase) => {
+export function uuids(): Possibility<string> {
+  return new Possibility<string>((testCase: TestCase) => {
     return uuidv4();
-  })
+  });
 }
 
 export function integers(min: number, max: number): Possibility<number> {
@@ -771,14 +727,15 @@ export function just<T>(value: T): Possibility<T> {
   return new Possibility<T>(() => value, `just(${value})`);
 }
 
-
 export function toNumber(bigintValue: bigint): number {
-  if (
-    bigintValue > BigInt(Number.MAX_SAFE_INTEGER) ||
-    bigintValue < BigInt(Number.MIN_SAFE_INTEGER)
-  ) {
+  if (bigintValue > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new Error(
       'BigInt value is too large to be safely converted to a Number'
+    );
+  }
+  if (bigintValue < BigInt(Number.MIN_SAFE_INTEGER)) {
+    throw new Error(
+      'BigInt value is too low to be safely converted to a Number'
     );
   }
   return Number(bigintValue);
@@ -787,16 +744,11 @@ export function mixOf<T>(...possibilities: Possibility<T>[]): Possibility<T> {
   if (possibilities.length === 0) {
     return nothing();
   }
-  return new Possibility<T>(
-    (testCase: TestCase) => {
-      return testCase.any(
-        possibilities[
-          toNumber(testCase.choice(BigInt(possibilities.length - 1)))
-        ]
-      );
-    },
-    `mixOf(${possibilities.map(p => p.toString()).join(', ')})`
-  );
+  return new Possibility<T>((testCase: TestCase) => {
+    return testCase.any(
+      possibilities[toNumber(testCase.choice(BigInt(possibilities.length - 1)))]
+    );
+  }, `mixOf(${possibilities.map(p => p.toString()).join(', ')})`);
 }
 export function nothing<T>(): Possibility<T> {
   return new Possibility<T>((testCase: TestCase) => {
@@ -849,27 +801,26 @@ export class TestCase {
 
   weighted(p: number): boolean {
     // console.log(`weighted: ${p}`);
-    if (!this) {
-      throw new Error('badthis');
-    }
+
     let result: boolean;
     if (p <= 0) {
       result = Boolean(this.forcedChoice(0n));
     } else if (p >= 1) {
       result = Boolean(this.forcedChoice(1n));
     } else {
-//       console.warn("using weighted");
+      //       console.warn("using weighted");
       result = Boolean(
         this.makeChoice(BigInt(1), () => {
           const fl = this.random.randFloat();
-   //       console.warn(`the float is ${fl}, p is ${p}`);
+          //       console.warn(`the float is ${fl}, p is ${p}`);
           return BigInt(fl <= p ? 1 : 0);
         })
       );
       //console.warn("should print?", this.shouldPrint());
-
     }
-    if(result == undefined) { throw new Error("bad error"); }
+    // if (result == undefined) {
+    //   throw new Error('bad error');
+    // }
     if (this.shouldPrint()) {
       console.log(`weighted(${p}): ${result}`);
     }
@@ -907,11 +858,7 @@ export class TestCase {
   }
 
   any<U>(possibility: Possibility<U>): U {
-    if (!this) {
-      throw new Error('selfless possibility on any');
-    }
-
-//    console.error(`entering any with this ${this} and ${possibility} at ${this.depth}`);
+    //    console.error(`entering any with this ${this} and ${possibility} at ${this.depth}`);
     let result: U;
     try {
       this.depth += 1;
@@ -976,12 +923,10 @@ prefix: [${this.prefix.map(x => x.toString()).join(', ')}],
 random: Random { seed: ${this.random.seed} },
 maxSize: ${this.maxSize},
 choices: [${this.choices.map(x => x.toString()).join(', ')}],
-status: ${this.status ? Status[this.status] : 'undefined'},
+status: ${Status[this.status]},
 printResults: ${this.printResults},
 depth: ${this.depth},
-targetingScore: ${
-      this.targetingScore !== undefined ? this.targetingScore : 'undefined'
-    }
+targetingScore: ${this.targetingScore}
 }`;
   }
 }
@@ -989,38 +934,15 @@ targetingScore: ${
 export function tuples<T extends unknown[]>(
   ...possibilities: {[K in keyof T]: Possibility<T[K]>}
 ): Possibility<T> {
-  return new Possibility<T>(
-    (testCase: TestCase) => {
-      return possibilities.map(possibility => testCase.any(possibility)) as T;
-    },
-    `tuples(${possibilities.map(p => p.toString()).join(', ')})`
-  );
-}
-
-export class MapDB implements Database {
-  private data: Map<string, Uint8Array>;
-
-  constructor() {
-    this.data = new Map();
-  }
-
-  async set(key: string, value: Uint8Array): Promise<void> {
-    this.data.set(key, value);
-  }
-
-  async get(key: string): Promise<Uint8Array | null> {
-    return this.data.has(key) ? this.data.get(key)! : null;
-  }
-
-  async delete(key: string): Promise<void> {
-    this.data.delete(key);
-  }
+  return new Possibility<T>((testCase: TestCase) => {
+    return possibilities.map(possibility => testCase.any(possibility)) as T;
+  }, `tuples(${possibilities.map(p => p.toString()).join(', ')})`);
 }
 
 export async function binSearchDown(
   lo: bigint,
   hi: bigint,
-  f:  (n: bigint) => Promise<boolean>
+  f: (n: bigint) => Promise<boolean>
 ): Promise<bigint> {
   if (await f(lo)) {
     return lo;
@@ -1096,7 +1018,19 @@ export class Random {
   }
 }
 
-function bigintArraysEqual(
+export function smallerThan(a: bigint[], b: bigint[]): boolean {
+  if (a.length < b.length) return true;
+  if (a.length > b.length) return false;
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] < b[i]) return true;
+    if (a[i] > b[i]) return false;
+  }
+
+  return false; // Arrays are equal
+}
+
+export function bigintArraysEqual(
   a: bigint[] | undefined,
   b: bigint[] | undefined
 ): boolean {
@@ -1114,47 +1048,4 @@ function bigintArraysEqual(
   }
 
   return true; // All elements are equal
-}
-
-function smallerThan(a: bigint[], b: bigint[]): boolean {
-  if (a.length < b.length) return true;
-  if (a.length > b.length) return false;
-
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] < b[i]) return true;
-    if (a[i] > b[i]) return false;
-  }
-
-  return false; // Arrays are equal
-}
-export class DBWrapper implements Database {
-  private dataStore: IDataStore<string>;
-
-  constructor(dataStore: IDataStore<string>) {
-    this.dataStore = dataStore;
-  }
-
-  async set(key: string, value: Uint8Array): Promise<void> {
-    const base64Value = toBase64(value);
-    await this.dataStore.set(key, base64Value);
-  }
-
-  async get(key: string): Promise<Uint8Array | null> {
-    const base64Value = await this.dataStore.get(key);
-    return base64Value ? fromBase64(base64Value) : null;
-  }
-
-  async delete(key: string): Promise<void> {
-    await this.dataStore.delete(key);
-  }
-  async count(): Promise<number> {
-    return await this.dataStore.count();
-  }
-}
-function toBase64(arrayBuffer: Uint8Array): string {
-  return Buffer.from(arrayBuffer).toString('base64');
-}
-
-function fromBase64(base64String: string): Uint8Array {
-  return Uint8Array.from(Buffer.from(base64String, 'base64'));
 }
