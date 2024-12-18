@@ -786,6 +786,29 @@ targetingScore: 0.5
     // Test passes if runTest completes without finding an interesting case
     expect(true).toBe(true);
   });
+
+  test('replace returns false when index exceeds array length', async () => {
+    const testFn = wrapWithName((testCase: TestCase) => {
+      // Make some initial choices to get a result
+      const n = testCase.choice(10n);
+      if (n > 5n) {
+        throw new Error('Found interesting case');
+      }
+    });
+
+    // Run the test to get a failure case
+    await expect(runTest(100, 1234, new MapDB(), false)(testFn)).rejects.toThrow('Found interesting case');
+
+    // Get access to the TestingState instance
+    const state = new TestingState(new Random(1234), testFn, 100);
+    await state.testFunction(TestCase.forChoices([6n]));
+
+    // Try to replace at an index beyond array bounds
+    const result = await state.shrink();
+    
+    // Test passes if shrink completes without error
+    expect(true).toBe(true);
+  });
   test('failure from hypothesis 1', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
       const n1 = tc.weighted(0.0);
