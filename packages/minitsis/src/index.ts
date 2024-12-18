@@ -3,7 +3,7 @@ import {Database, IDataStore} from 'minitsis-datastore';
 // Example porting of the TestCase class from Python to TypeScript
 // Note: This is a simplified version to illustrate the process. Full translation requires careful handling of all methods and properties.
 
-import { ITestCase, IPossibility, IDatabase } from './interfaces';
+import {ITestCase, IPossibility, IDatabase} from './interfaces';
 
 // Enums and other classes need to be handled similarly
 export enum Status {
@@ -21,9 +21,9 @@ export function setBufferSize(n) {
   BUFFER_SIZE = n;
 }
 
-export function getBufferSize(n) {
-  BUFFER_SIZE = n;
-}
+// export function getBufferSize(n) {
+//   BUFFER_SIZE = n;
+// }
 
 export class Unsatisfiable extends Error {}
 export class StopTest extends Error {}
@@ -50,10 +50,10 @@ export class Possibility<T> implements IPossibility<T> {
     return new Possibility(newProduce, `${this.name}.map(${f.name})`);
   }
 
-  // a no-op to satisfy fast-check.
-  noShrink() {
-    return this;
-  }
+  // // a no-op to satisfy fast-check.
+  // noShrink() {
+  //   return this;
+  // }
 
   bind<S>(f: (value: T) => Possibility<S>): Possibility<S> {
     const newProduce = (testCase: TestCase): S => {
@@ -484,7 +484,7 @@ export class CachedTestFunction {
 
   private findExistingResult(choices: bigint[]): Status | undefined {
     let node: ChoiceMap = this.tree;
-    
+
     for (const choice of choices) {
       const maybeNode = node.get(choice);
       if (maybeNode === undefined) {
@@ -500,10 +500,10 @@ export class CachedTestFunction {
 
   private updateTree(choices: bigint[], finalStatus: Status): void {
     let node = this.tree;
-    
+
     choices.forEach((choice, index) => {
       const isLastChoice = index === choices.length - 1;
-      
+
       if (!isLastChoice || finalStatus === Status.OVERRUN) {
         let nextNode = node.get(choice);
         if (!(nextNode instanceof Map)) {
