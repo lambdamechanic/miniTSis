@@ -799,6 +799,32 @@ targetingScore: 0.5
     expect(testCase.toString()).toBe(expected);
   });
 
+  test('runTestAsync defaults maxExamples to 100', async () => {
+    const testFn = wrapWithNameAsync(async (testCase: TestCase) => {
+      const n = testCase.choice(10n);
+      if (n > 5n) {
+        throw new Error('Found interesting case');
+      }
+    });
+
+    await expect(
+      runTestAsync(undefined, 1234, new MapDB())(testFn)
+    ).rejects.toThrow('Found interesting case');
+  });
+
+  test('runTest defaults quiet to false', async () => {
+    const testFn = wrapWithName((testCase: TestCase) => {
+      const n = testCase.choice(10n);
+      if (n > 5n) {
+        throw new Error('Found interesting case');
+      }
+    });
+
+    await expect(
+      runTest(100, 1234, new MapDB())(testFn)
+    ).rejects.toThrow('Found interesting case');
+  });
+
   test('targeting gives up after too many examples', async () => {
     const testFn = wrapWithName((testCase: TestCase) => {
       const n = testCase.choice(1000n);
