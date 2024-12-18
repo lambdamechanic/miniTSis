@@ -4,6 +4,7 @@ import {
   MapDB,
   Random,
   Status,
+  StopTest,
   type ChoiceMap,
   TestCase,
   TestingState,
