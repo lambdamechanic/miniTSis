@@ -450,7 +450,10 @@ export class CachedTestFunction {
         return undefined;
       }
       if (!(maybeNode instanceof Map)) {
-        return maybeNode === Status.OVERRUN ? undefined : maybeNode;
+        return maybeNode === Status.OVERRUN
+          ? /* istanbul ignore next */ // this is just incredibly hard to provoke.
+            undefined
+          : maybeNode;
       }
       node = maybeNode;
     }
@@ -920,12 +923,10 @@ prefix: [${this.prefix.map(x => x.toString()).join(', ')}],
 random: Random { seed: ${this.random.seed} },
 maxSize: ${this.maxSize},
 choices: [${this.choices.map(x => x.toString()).join(', ')}],
-status: ${this.status ? Status[this.status] : 'undefined'},
+status: ${Status[this.status]},
 printResults: ${this.printResults},
 depth: ${this.depth},
-targetingScore: ${
-      this.targetingScore !== undefined ? this.targetingScore : 'undefined'
-    }
+targetingScore: ${this.targetingScore}
 }`;
   }
 }
