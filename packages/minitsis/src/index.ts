@@ -3,10 +3,7 @@ import {Database, IDataStore} from 'minitsis-datastore';
 // Example porting of the TestCase class from Python to TypeScript
 // Note: This is a simplified version to illustrate the process. Full translation requires careful handling of all methods and properties.
 
-// interface Database {
-//     // Convert Python's protocol to TypeScript interface
-//     [key: string]: Uint8Array; // Assuming bytes are handled as Uint8Array in TypeScript
-// }
+import { ITestCase, IPossibility, IDatabase } from './interfaces';
 
 // Enums and other classes need to be handled similarly
 export enum Status {
