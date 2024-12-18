@@ -733,12 +733,14 @@ export function just<T>(value: T): Possibility<T> {
 }
 
 export function toNumber(bigintValue: bigint): number {
-  if (
-    bigintValue > BigInt(Number.MAX_SAFE_INTEGER) ||
-    bigintValue < BigInt(Number.MIN_SAFE_INTEGER)
-  ) {
+  if (bigintValue > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new Error(
       'BigInt value is too large to be safely converted to a Number'
+    );
+  }
+  if (bigintValue < BigInt(Number.MIN_SAFE_INTEGER)) {
+    throw new Error(
+      'BigInt value is too low to be safely converted to a Number'
     );
   }
   return Number(bigintValue);

@@ -652,6 +652,18 @@ describe('Minithesis Tests', () => {
     await runTest(100, 1234, new MapDB(), false)(testFn);
   });
 
+  test('toNumber throws on out of bounds values', () => {
+    // Test too high
+    expect(() => toNumber(BigInt(Number.MAX_SAFE_INTEGER) + 1n)).toThrow(
+      'BigInt value is too large to be safely converted to a Number'
+    );
+    
+    // Test too low
+    expect(() => toNumber(BigInt(Number.MIN_SAFE_INTEGER) - 1n)).toThrow(
+      'BigInt value is too low to be safely converted to a Number'
+    );
+  });
+
   test('forced choice bounds', async () => {
     const tc = new TestCase([], new Random(1234), Infinity);
     expect(() => tc.forcedChoice(2n ** 64n)).toThrowError();
