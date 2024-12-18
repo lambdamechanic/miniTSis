@@ -771,6 +771,12 @@ describe('Minithesis Tests', () => {
     expect(() => tc.forcedChoice(2n ** 64n)).toThrowError();
   });
 
+  test('TestCase defaults maxSize to Infinity when not specified', () => {
+    const random = new Random(12345);
+    const testCase = new TestCase([1n, 2n], random);
+    expect(testCase.maxSize).toBe(Infinity);
+  });
+
   test('TestCase toString outputs expected format', () => {
     const random = new Random(12345);
     const testCase = new TestCase([1n, 2n], random, 100, true);
