@@ -21,6 +21,7 @@ import {
   toNumber,
   tuples,
   uuids,
+  bigintArraysEqual,
 
   // for debugging only
   // getBufferSize,
