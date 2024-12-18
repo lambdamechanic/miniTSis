@@ -19,6 +19,7 @@
     },
     "scripts": {
         "dev": "turbo run dev",
+        "test": "jest --coverage",
         "publish-packages": "turbo run build lint test && changeset version && changeset publish"
     }
 }
