@@ -1,5 +1,5 @@
 import {v4 as uuidv4} from 'uuid';
-import {Database,IDataStore} from 'minitsis-datastore';
+import {Database, IDataStore} from 'minitsis-datastore';
 // Example porting of the TestCase class from Python to TypeScript
 // Note: This is a simplified version to illustrate the process. Full translation requires careful handling of all methods and properties.
 
@@ -54,7 +54,9 @@ export class Possibility<T> {
   }
 
   // a no-op to satisfy fast-check.
-  noShrink() { return this;}
+  noShrink() {
+    return this;
+  }
 
   bind<S>(f: (value: T) => Possibility<S>): Possibility<S> {
     const newProduce = (testCase: TestCase): S => {
@@ -156,7 +158,6 @@ export class TestingState {
       this.result = testCase.choices;
       await alertOnFailureSingleton(testCase);
       // console.info(`choices ${testCase.choices} is better than ${this.result}`);
-
     }
   }
 
@@ -225,7 +226,6 @@ export class TestingState {
     await this.generate();
     await this.target();
     await this.shrink();
-
   }
 
   async generate(): Promise<void> {
@@ -252,10 +252,10 @@ export class TestingState {
       if (bigintArraysEqual(choices, this.result)) {
         return true;
       }
-      return ((await cached.call(choices)) === Status.INTERESTING);
+      return (await cached.call(choices)) === Status.INTERESTING;
     };
 
-    if (! await consider(this.result)) {
+    if (!(await consider(this.result))) {
       throw new Error('current result inconsiderable');
     }
 
@@ -264,7 +264,7 @@ export class TestingState {
       prev = this.result ? [...this.result] : [];
 
       //      for (let k = 8; k > 0; k /= 2) {
-      for (let k = this.result.length; k > 0; k -=1) {
+      for (let k = this.result.length; k > 0; k -= 1) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
           if (i >= this.result.length) {
             i--;
@@ -286,7 +286,9 @@ export class TestingState {
         }
       }
 
-      const replace = async (values: {[key: number]: bigint}): Promise<boolean> => {
+      const replace = async (values: {
+        [key: number]: bigint;
+      }): Promise<boolean> => {
         if (!this.result) {
           throw new Error('should have a result here');
         }
@@ -304,8 +306,8 @@ export class TestingState {
         return await consider(attempt);
       };
 
-      for (let k = this.result.length; k > 0; k -=1) {
-	//for (let k = 8; k > 1; k /= 2) {
+      for (let k = this.result.length; k > 0; k -= 1) {
+        //for (let k = 8; k > 1; k /= 2) {
         for (let i = this.result.length - k; i >= 0; i--) {
           if (
             await replace(
@@ -322,13 +324,15 @@ export class TestingState {
       }
 
       for (let i = this.result.length - 1; i >= 0; i--) {
-        await binSearchDown(BigInt(0), this.result[i], async (v: bigint) =>
-          await replace({[i]: v})
+        await binSearchDown(
+          BigInt(0),
+          this.result[i],
+          async (v: bigint) => await replace({[i]: v})
         );
       }
       // First try deleting chunks of choices
-      for (let k = this.result.length; k > 0; k -=1) {
-	//for (let k = 8; k > 0; k /= 2) {
+      for (let k = this.result.length; k > 0; k -= 1) {
+        //for (let k = 8; k > 0; k /= 2) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
           if (this.result === undefined) {
             throw new Error('never undefined here');
@@ -342,8 +346,8 @@ export class TestingState {
       }
 
       // Try replacing blocks of choices with zeroes, then adjust for smaller values
-      for (let k = this.result.length; k > 0; k -=1) {
-	// for (let k = 8; k >= 1; k /= 2) {
+      for (let k = this.result.length; k > 0; k -= 1) {
+        // for (let k = 8; k >= 1; k /= 2) {
         if (this.result === undefined) {
           throw new Error('never undefined here');
         }
@@ -402,16 +406,18 @@ function createFakeChoiceMap(): ChoiceMap {
   const handler = {
     get(target: any, prop: PropertyKey, receiver: any): any {
       if (prop === 'get') {
-        return function() {
-	  // https://github.com/lambdamechanic/miniTSis/issues/1
+        return function () {
+          // https://github.com/lambdamechanic/miniTSis/issues/1
           // throw new Error("'.get' method was called on a fake ChoiceMap");
         };
       } else if (prop === 'set') {
-	return function(a) { return undefined };
+        return function (a) {
+          return undefined;
+        };
       }
 
       return Reflect.get(target, prop, receiver);
-    }
+    },
   };
 
   const fakeMap = new Map<bigint, ChoiceMap | Status>();
@@ -454,29 +460,29 @@ export class CachedTestFunction {
     this.tree = new Map();
   }
 
-
-
   public async call(choices: bigint[]): Promise<Status> {
     let node: ChoiceMap = this.tree; // Assuming `this.tree` is of type ChoiceMap
-    let maybeNode : ChoiceMap | Status;
+    let maybeNode: ChoiceMap | Status;
 
     let hitEnd = false;
     for (const c of choices) {
       maybeNode = node.get(c);
       if (maybeNode === undefined) {
-	hitEnd = true;
-	break;
+        hitEnd = true;
+        break;
       }
       if (maybeNode instanceof Map) {
-	node = maybeNode;
+        node = maybeNode;
       } else {
-	if (maybeNode === Status.OVERRUN) {
-	  throw new Error("Unexpected overrun");
-	}
-	return maybeNode as Status;
+        if (maybeNode === Status.OVERRUN) {
+          throw new Error('Unexpected overrun');
+        }
+        return maybeNode as Status;
       }
     }
-    if (!hitEnd) { return Status.OVERRUN ; }
+    if (!hitEnd) {
+      return Status.OVERRUN;
+    }
 
     const testCase = TestCase.forChoices(choices);
     await this.testFunction(testCase);
@@ -488,38 +494,39 @@ export class CachedTestFunction {
     node = this.tree;
     choices.forEach((c, i) => {
       if (i + 1 < choices.length || testCase.status === Status.OVERRUN) {
-	maybeNode = node.get(c);
-	if (maybeNode === undefined) {
-	  const newNode = new Map();
-	  node.set(c,newNode);
-	  node = newNode;
-	} else {
-	  // we have a valid node. if it's a map, we're good. if it's a status, we have done something terribly wrong
-	  // and should blow uf as fast as possible.
-	  if (maybeNode instanceof Map) {
-	    //phew.
-	    node = maybeNode;
-	  } else {
-	    // in this case, there's no point setting the node.
-	    // we must be at the end of the tree, otherwise it would
-	    // fail the next time, and i've never seen that happen.
-	    //
-	    // originial minithesis plays a bit fast and loose with types,
-	    // so it isn't statically required to be a Map here.
-	    // we are going to be a bit more careful and at least assert that it doesn't get called again.
-	    //
-	    node = createFakeChoiceMap();
+        maybeNode = node.get(c);
+        if (maybeNode === undefined) {
+          const newNode = new Map();
+          node.set(c, newNode);
+          node = newNode;
+        } else {
+          // we have a valid node. if it's a map, we're good. if it's a status, we have done something terribly wrong
+          // and should blow uf as fast as possible.
+          if (maybeNode instanceof Map) {
+            //phew.
+            node = maybeNode;
+          } else {
+            // in this case, there's no point setting the node.
+            // we must be at the end of the tree, otherwise it would
+            // fail the next time, and i've never seen that happen.
+            //
+            // originial minithesis plays a bit fast and loose with types,
+            // so it isn't statically required to be a Map here.
+            // we are going to be a bit more careful and at least assert that it doesn't get called again.
+            //
+            node = createFakeChoiceMap();
 
-
-	    throw new Error(`got a bit weird c:${c}, i:${i}, choices:${choices},
-                ${JSON.stringify({tree: serializeChoiceMap(this.tree)
-                                 ,node: serializeChoiceMap(node)})}`);
-	  }
-	}
+            throw new Error(`got a bit weird c:${c}, i:${i}, choices:${choices},
+                ${JSON.stringify({
+                  tree: serializeChoiceMap(this.tree),
+                  node: serializeChoiceMap(node),
+                })}`);
+          }
+        }
       } else {
-	node.set(c, testCase.status);
+        node.set(c, testCase.status);
       }
-    })
+    });
     return testCase.status;
   }
 }
@@ -576,10 +583,9 @@ export class CachedTestFunction {
 //   }
 // }
 
-
 export function runTest(
-  maxExamples,
-  seed : number,
+  maxExamples: number,
+  seed: number,
   database?: Database, // Assume Database interface/type is defined elsewhere.
   quiet = false
 ): (test: (testCase: TestCase) => void) => Promise<void> {
@@ -598,29 +604,30 @@ export function runTest(
   };
 }
 
-
 let alertOnFailureSingleton;
 
 export function runTestAsync(
-  maxExamples : number = 100,
+  maxExamples: number = 100,
   seed: number,
   database?: Database,
   quiet = false,
-  alertOnFailure?  : (testCase: TestCase) => Promise<void>
+  alertOnFailure?: (testCase: TestCase) => Promise<void>
 ): (test: (testCase: TestCase) => Promise<void>) => Promise<void> {
   if (alertOnFailure !== undefined) {
     // set naughty global singleton.
-    alertOnFailureSingleton=alertOnFailure;
+    alertOnFailureSingleton = alertOnFailure;
   } else {
-    alertOnFailureSingleton= async (testCase: TestCase) => {
-      return ;
-    }
+    alertOnFailureSingleton = async (testCase: TestCase) => {
+      return;
+    };
   }
   const ret = async (test: (testCase: TestCase) => Promise<void>) => {
-    const markFailuresInteresting = async (testCase: TestCase): Promise<void> => {
+    const markFailuresInteresting = async (
+      testCase: TestCase
+    ): Promise<void> => {
       // console.log("markFailuresInteresting", testCase);
       try {
-	// console.log("asking", testCase);
+        // console.log("asking", testCase);
         await test(testCase);
       } catch (error) {
         //	console.log("markFailuresInterestingError: case", testCase);
@@ -628,7 +635,7 @@ export function runTestAsync(
           throw error;
         } else {
         }
-	// console.log("test case marked interesting, we should definitely have a failure");
+        // console.log("test case marked interesting, we should definitely have a failure");
         testCase.markStatus(Status.INTERESTING);
       }
     };
@@ -700,10 +707,10 @@ export function runTestAsync(
   return ret;
 }
 
-export function uuids() : Possibility<string> {
-  return new Possibility<string>((testCase:TestCase) => {
+export function uuids(): Possibility<string> {
+  return new Possibility<string>((testCase: TestCase) => {
     return uuidv4();
-  })
+  });
 }
 
 export function integers(min: number, max: number): Possibility<number> {
@@ -771,7 +778,6 @@ export function just<T>(value: T): Possibility<T> {
   return new Possibility<T>(() => value, `just(${value})`);
 }
 
-
 export function toNumber(bigintValue: bigint): number {
   if (
     bigintValue > BigInt(Number.MAX_SAFE_INTEGER) ||
@@ -787,16 +793,11 @@ export function mixOf<T>(...possibilities: Possibility<T>[]): Possibility<T> {
   if (possibilities.length === 0) {
     return nothing();
   }
-  return new Possibility<T>(
-    (testCase: TestCase) => {
-      return testCase.any(
-        possibilities[
-          toNumber(testCase.choice(BigInt(possibilities.length - 1)))
-        ]
-      );
-    },
-    `mixOf(${possibilities.map(p => p.toString()).join(', ')})`
-  );
+  return new Possibility<T>((testCase: TestCase) => {
+    return testCase.any(
+      possibilities[toNumber(testCase.choice(BigInt(possibilities.length - 1)))]
+    );
+  }, `mixOf(${possibilities.map(p => p.toString()).join(', ')})`);
 }
 export function nothing<T>(): Possibility<T> {
   return new Possibility<T>((testCase: TestCase) => {
@@ -858,18 +859,19 @@ export class TestCase {
     } else if (p >= 1) {
       result = Boolean(this.forcedChoice(1n));
     } else {
-//       console.warn("using weighted");
+      //       console.warn("using weighted");
       result = Boolean(
         this.makeChoice(BigInt(1), () => {
           const fl = this.random.randFloat();
-   //       console.warn(`the float is ${fl}, p is ${p}`);
+          //       console.warn(`the float is ${fl}, p is ${p}`);
           return BigInt(fl <= p ? 1 : 0);
         })
       );
       //console.warn("should print?", this.shouldPrint());
-
     }
-    if(result == undefined) { throw new Error("bad error"); }
+    if (result == undefined) {
+      throw new Error('bad error');
+    }
     if (this.shouldPrint()) {
       console.log(`weighted(${p}): ${result}`);
     }
@@ -911,7 +913,7 @@ export class TestCase {
       throw new Error('selfless possibility on any');
     }
 
-//    console.error(`entering any with this ${this} and ${possibility} at ${this.depth}`);
+    //    console.error(`entering any with this ${this} and ${possibility} at ${this.depth}`);
     let result: U;
     try {
       this.depth += 1;
@@ -989,12 +991,9 @@ targetingScore: ${
 export function tuples<T extends unknown[]>(
   ...possibilities: {[K in keyof T]: Possibility<T[K]>}
 ): Possibility<T> {
-  return new Possibility<T>(
-    (testCase: TestCase) => {
-      return possibilities.map(possibility => testCase.any(possibility)) as T;
-    },
-    `tuples(${possibilities.map(p => p.toString()).join(', ')})`
-  );
+  return new Possibility<T>((testCase: TestCase) => {
+    return possibilities.map(possibility => testCase.any(possibility)) as T;
+  }, `tuples(${possibilities.map(p => p.toString()).join(', ')})`);
 }
 
 export class MapDB implements Database {
@@ -1020,7 +1019,7 @@ export class MapDB implements Database {
 export async function binSearchDown(
   lo: bigint,
   hi: bigint,
-  f:  (n: bigint) => Promise<boolean>
+  f: (n: bigint) => Promise<boolean>
 ): Promise<bigint> {
   if (await f(lo)) {
     return lo;
