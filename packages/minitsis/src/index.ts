@@ -398,7 +398,7 @@ export class TestingState {
     );
   }
 }
-type ChoiceMap = Map<bigint, ChoiceMap | Status>;
+export type ChoiceMap = Map<bigint, ChoiceMap | Status>;
 
 export class CachedTestFunction {
   private testFunction: (testCase: TestCase) => Promise<void>;
