@@ -32,11 +32,11 @@ export class Unsatisfiable extends Error {}
 export class StopTest extends Error {}
 export class Frozen extends Error {}
 
-export class Possibility<T> {
-  public produce: (testCase: TestCase) => T;
+export class Possibility<T> implements IPossibility<T> {
+  public produce: (testCase: ITestCase) => T;
   public name: string;
 
-  constructor(produce: (testCase: TestCase) => T, name?: string) {
+  constructor(produce: (testCase: ITestCase) => T, name?: string) {
     // console.log("new possibility");
     this.produce = produce;
     this.name = name ?? produce.name;
@@ -460,74 +460,64 @@ export class CachedTestFunction {
     this.tree = new Map();
   }
 
+  /**
+   * Executes a test case with the given choices and returns its status
+   * @param choices Array of bigint choices to execute
+   * @returns The final Status of the test case
+   */
   public async call(choices: bigint[]): Promise<Status> {
-    let node: ChoiceMap = this.tree; // Assuming `this.tree` is of type ChoiceMap
-    let maybeNode: ChoiceMap | Status;
-
-    let hitEnd = false;
-    for (const c of choices) {
-      maybeNode = node.get(c);
-      if (maybeNode === undefined) {
-        hitEnd = true;
-        break;
-      }
-      if (maybeNode instanceof Map) {
-        node = maybeNode;
-      } else {
-        if (maybeNode === Status.OVERRUN) {
-          throw new Error('Unexpected overrun');
-        }
-        return maybeNode as Status;
-      }
-    }
-    if (!hitEnd) {
-      return Status.OVERRUN;
+    // Try to find existing result in the tree
+    const existingResult = this.findExistingResult(choices);
+    if (existingResult !== undefined) {
+      return existingResult;
     }
 
+    // Execute new test case
     const testCase = TestCase.forChoices(choices);
     await this.testFunction(testCase);
 
-    if (testCase.status === undefined)
+    if (testCase.status === undefined) {
       throw new Error('Test case did not set a status');
+    }
 
-    // Reset node to the root to update the tree with the new outcome
-    node = this.tree;
-    choices.forEach((c, i) => {
-      if (i + 1 < choices.length || testCase.status === Status.OVERRUN) {
-        maybeNode = node.get(c);
-        if (maybeNode === undefined) {
-          const newNode = new Map();
-          node.set(c, newNode);
-          node = newNode;
-        } else {
-          // we have a valid node. if it's a map, we're good. if it's a status, we have done something terribly wrong
-          // and should blow uf as fast as possible.
-          if (maybeNode instanceof Map) {
-            //phew.
-            node = maybeNode;
-          } else {
-            // in this case, there's no point setting the node.
-            // we must be at the end of the tree, otherwise it would
-            // fail the next time, and i've never seen that happen.
-            //
-            // originial minithesis plays a bit fast and loose with types,
-            // so it isn't statically required to be a Map here.
-            // we are going to be a bit more careful and at least assert that it doesn't get called again.
-            //
-            node = createFakeChoiceMap();
+    // Update tree with new result
+    this.updateTree(choices, testCase.status);
+    return testCase.status;
+  }
 
-            throw new Error(`got a bit weird c:${c}, i:${i}, choices:${choices},
-                ${JSON.stringify({
-                  tree: serializeChoiceMap(this.tree),
-                  node: serializeChoiceMap(node),
-                })}`);
-          }
+  private findExistingResult(choices: bigint[]): Status | undefined {
+    let node: ChoiceMap = this.tree;
+    
+    for (const choice of choices) {
+      const maybeNode = node.get(choice);
+      if (maybeNode === undefined) {
+        return undefined;
+      }
+      if (!(maybeNode instanceof Map)) {
+        return maybeNode === Status.OVERRUN ? undefined : maybeNode;
+      }
+      node = maybeNode;
+    }
+    return Status.OVERRUN;
+  }
+
+  private updateTree(choices: bigint[], finalStatus: Status): void {
+    let node = this.tree;
+    
+    choices.forEach((choice, index) => {
+      const isLastChoice = index === choices.length - 1;
+      
+      if (!isLastChoice || finalStatus === Status.OVERRUN) {
+        let nextNode = node.get(choice);
+        if (!(nextNode instanceof Map)) {
+          nextNode = new Map();
+          node.set(choice, nextNode);
         }
+        node = nextNode;
       } else {
-        node.set(c, testCase.status);
+        node.set(choice, finalStatus);
       }
     });
-    return testCase.status;
   }
 }
 //   public async call(choices: bigint[]): Promise<Status> {
