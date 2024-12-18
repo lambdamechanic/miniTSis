@@ -262,23 +262,21 @@ export class TestingState {
       //      for (let k = 8; k > 0; k /= 2) {
       for (let k = this.result.length; k > 0; k -= 1) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
-          if (i >= this.result.length) {
-            i--;
-            continue;
-          }
-          const attempt = [
-            ...this.result.slice(0, i),
-            ...this.result.slice(i + k),
-          ];
-          if (!(await consider(attempt))) {
-            if (i > 0 && attempt[i - 1] > 0) {
-              attempt[i - 1]--;
-              if (await consider(attempt)) {
-                i++;
+          if (i < this.result.length) {
+            const attempt = [
+              ...this.result.slice(0, i),
+              ...this.result.slice(i + k),
+            ];
+            if (!(await consider(attempt))) {
+              if (i > 0 && attempt[i - 1] > 0) {
+                attempt[i - 1]--;
+                if (await consider(attempt)) {
+                  i++;
+                }
               }
             }
+            i--;
           }
-          i--;
         }
       }
 
@@ -1077,4 +1075,3 @@ export function bigintArraysEqual(
 
   return true; // All elements are equal
 }
-
