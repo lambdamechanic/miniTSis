@@ -110,6 +110,7 @@ export class TestingState {
     try {
       await this.testFunctionCallback(testCase);
     } catch (error) {
+      /* istanbul ignore if */ // Should only be StopTest
       if (!(error instanceof StopTest)) {
         throw error;
       }
@@ -164,6 +165,7 @@ export class TestingState {
     }
 
     const adjust = async (i: number, step: bigint): Promise<boolean> => {
+      /* istanbul ignore if */ // Type checking ensures this
       if (!this.bestScoring) {
         throw new Error('bestScoring undefined, should be impossible');
       }
@@ -177,6 +179,7 @@ export class TestingState {
       const testCase = new TestCase(attempt, this.random, BUFFER_SIZE);
 
       await this.testFunction(testCase); // Ensure testFunction handles async correctly
+      /* istanbul ignore if */ // Status is always set by this point
       if (testCase.status === undefined) {
         throw new Error(
           `status undefined, should be impossible; ${testCase}, ${i}, ${step}, ${this.bestScoring}`
@@ -286,6 +289,7 @@ export class TestingState {
       const replace = async (values: {
         [key: number]: bigint;
       }): Promise<boolean> => {
+        /* istanbul ignore if */ // Type checking ensures this
         if (!this.result) {
           throw new Error('should have a result here');
         }
@@ -331,6 +335,7 @@ export class TestingState {
       for (let k = this.result.length; k > 0; k -= 1) {
         //for (let k = 8; k > 0; k /= 2) {
         for (let i = this.result.length - k - 1; i >= 0; i--) {
+          /* istanbul ignore if */ // Type checking ensures this
           if (this.result === undefined) {
             throw new Error('never undefined here');
           }
@@ -473,6 +478,7 @@ export class CachedTestFunction {
     const testCase = TestCase.forChoices(choices);
     await this.testFunction(testCase);
 
+    /* istanbul ignore if */ // Status is always set by this point
     if (testCase.status === undefined) {
       throw new Error('Test case did not set a status');
     }
