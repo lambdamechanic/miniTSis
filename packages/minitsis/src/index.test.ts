@@ -1,3 +1,23 @@
+class MapDB implements Database {
+  private data: Map<string, Uint8Array>;
+
+  constructor() {
+    this.data = new Map();
+  }
+
+  async set(key: string, value: Uint8Array): Promise<void> {
+    this.data.set(key, value);
+  }
+
+  async get(key: string): Promise<Uint8Array | null> {
+    return this.data.has(key) ? this.data.get(key)! : null;
+  }
+
+  async delete(key: string): Promise<void> {
+    this.data.delete(key);
+  }
+}
+
 import {
   CachedTestFunction,
   Frozen,
