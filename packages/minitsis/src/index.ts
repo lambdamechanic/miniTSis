@@ -400,42 +400,6 @@ export class TestingState {
 }
 type ChoiceMap = Map<bigint, ChoiceMap | Status>;
 
-// Function to create a "fake" ChoiceMap that throws when `.get` is called
-function createFakeChoiceMap(): ChoiceMap {
-  const handler = {
-    get(target: any, prop: PropertyKey, receiver: any): any {
-      if (prop === 'get') {
-        return function () {
-          // https://github.com/lambdamechanic/miniTSis/issues/1
-          // throw new Error("'.get' method was called on a fake ChoiceMap");
-        };
-      } else if (prop === 'set') {
-        return function (a) {
-          return undefined;
-        };
-      }
-
-      return Reflect.get(target, prop, receiver);
-    },
-  };
-
-  const fakeMap = new Map<bigint, ChoiceMap | Status>();
-  const proxy = new Proxy(fakeMap, handler);
-  return proxy as ChoiceMap;
-}
-
-function serializeChoiceMap(choiceMap: ChoiceMap): any {
-  const obj = {};
-  for (const [key, value] of choiceMap) {
-    if (value instanceof Map) {
-      obj[key.toString()] = serializeChoiceMap(value); // Recursively serialize nested ChoiceMaps
-    } else {
-      // For enum values, you might want to store them in a distinguishable way
-      obj[key.toString()] = value;
-    }
-  }
-  return obj;
-}
 export class CachedTestFunction {
   private testFunction: (testCase: TestCase) => Promise<void>;
   // Using Map to represent a tree structure
