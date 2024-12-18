@@ -375,7 +375,7 @@ export class TestingState {
     return (await cached.call(choices)) === Status.INTERESTING;
   }
 
-  private async replace(values: {[key: number]: bigint}): Promise<boolean> {
+  protected async replace(values: {[key: number]: bigint}): Promise<boolean> {
     if (!this.result) {
       throw new Error('should have a result here');
     }
