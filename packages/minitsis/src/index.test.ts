@@ -32,6 +32,40 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import {Database, IDataStore} from 'minitsis-datastore';
+
+class DBWrapper implements Database {
+  private dataStore: IDataStore<string>;
+
+  constructor(dataStore: IDataStore<string>) {
+    this.dataStore = dataStore;
+  }
+
+  async set(key: string, value: Uint8Array): Promise<void> {
+    const base64Value = toBase64(value);
+    await this.dataStore.set(key, base64Value);
+  }
+
+  async get(key: string): Promise<Uint8Array | null> {
+    const base64Value = await this.dataStore.get(key);
+    return base64Value ? fromBase64(base64Value) : null;
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.dataStore.delete(key);
+  }
+  
+  async count(): Promise<number> {
+    return await this.dataStore.count();
+  }
+}
+
+function toBase64(arrayBuffer: Uint8Array): string {
+  return Buffer.from(arrayBuffer).toString('base64');
+}
+
+function fromBase64(base64String: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(base64String, 'base64'));
+}
 import {BrowserDataStore} from 'minitsis-browser';
 import {NodeDataStore} from 'minitsis-node';
 
@@ -701,6 +735,15 @@ describe('Minithesis Tests', () => {
     expect(bigintArraysEqual(undefined, [1n])).toBe(false);
     expect(bigintArraysEqual([1n], undefined)).toBe(false);
     expect(bigintArraysEqual(undefined, undefined)).toBe(false);
+  });
+
+  test('smallerThan comparison', () => {
+    // Test first array longer than second
+    expect(smallerThan([1n, 2n, 3n], [1n, 2n])).toBe(false);
+    // Test arrays of same length and content
+    expect(smallerThan([1n, 2n, 3n], [1n, 2n, 3n])).toBe(false);
+    // Test first array smaller than second
+    expect(smallerThan([1n, 2n], [1n, 2n, 3n])).toBe(true);
   });
 
   test('forced choice bounds', async () => {

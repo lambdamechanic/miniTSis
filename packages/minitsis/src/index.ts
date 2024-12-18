@@ -1045,6 +1045,18 @@ export class Random {
   }
 }
 
+export function smallerThan(a: bigint[], b: bigint[]): boolean {
+  if (a.length < b.length) return true;
+  if (a.length > b.length) return false;
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] < b[i]) return true;
+    if (a[i] > b[i]) return false;
+  }
+
+  return false; // Arrays are equal
+}
+
 export function bigintArraysEqual(
   a: bigint[] | undefined,
   b: bigint[] | undefined
@@ -1075,35 +1087,4 @@ function smallerThan(a: bigint[], b: bigint[]): boolean {
   }
 
   return false; // Arrays are equal
-}
-export class DBWrapper implements Database {
-  private dataStore: IDataStore<string>;
-
-  constructor(dataStore: IDataStore<string>) {
-    this.dataStore = dataStore;
-  }
-
-  async set(key: string, value: Uint8Array): Promise<void> {
-    const base64Value = toBase64(value);
-    await this.dataStore.set(key, base64Value);
-  }
-
-  async get(key: string): Promise<Uint8Array | null> {
-    const base64Value = await this.dataStore.get(key);
-    return base64Value ? fromBase64(base64Value) : null;
-  }
-
-  async delete(key: string): Promise<void> {
-    await this.dataStore.delete(key);
-  }
-  async count(): Promise<number> {
-    return await this.dataStore.count();
-  }
-}
-function toBase64(arrayBuffer: Uint8Array): string {
-  return Buffer.from(arrayBuffer).toString('base64');
-}
-
-function fromBase64(base64String: string): Uint8Array {
-  return Uint8Array.from(Buffer.from(base64String, 'base64'));
 }
