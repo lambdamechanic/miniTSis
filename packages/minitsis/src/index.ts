@@ -1077,14 +1077,3 @@ export function bigintArraysEqual(
   return true; // All elements are equal
 }
 
-function smallerThan(a: bigint[], b: bigint[]): boolean {
-  if (a.length < b.length) return true;
-  if (a.length > b.length) return false;
-
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] < b[i]) return true;
-    if (a[i] > b[i]) return false;
-  }
-
-  return false; // Arrays are equal
-}

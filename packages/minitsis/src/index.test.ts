@@ -1,6 +1,5 @@
 import {
   CachedTestFunction,
-  DBWrapper,
   Frozen,
   MapDB,
   Random,
@@ -22,6 +21,7 @@ import {
   tuples,
   uuids,
   bigintArraysEqual,
+  smallerThan,
 
   // for debugging only
   // getBufferSize,
