@@ -17,19 +17,22 @@ methodology](https://drmaciver.github.io/papers/reduction-via-generation-preview
 Minithesis, you can actually guarantee optimal shrinking (at least given enough time, in small cases):
 
 ```
-  test('shrinking regression in fast-check', async () => {
-    const testFn = (testCase: TestCase) => {
-      const [a, b] = testCase.any(integers(0,100).bind(b =>	tuples(integers(0,b), just(b))))
+      test('test README example', async () => {
+        // Usually you'd set this up once and reuse it, dbLocation would be a constant path string.
+        const db = new DBWrapper(new NodeDataStore<string>(dbLocation));
+        const testFn = (testCase: TestCase) => {
+          count += 1;
+          const choice = testCase.choice(BigInt(10000));
+          if (choice >= BigInt(8)) {
+            throw new Error('Choice is too high');
+          }
+        };
 
-      // The predicate that will fail if 'a' and 'b' are not close enough
-      if (b - a > 5n) {
-	    throw new Error(`Predicate failed: b (${b}) - a (${a}) > 5`);
-      }
-    };
+        await expect(
+          runTest(100, 1234, db, false)(wrapWithName(testFn))
+        ).rejects.toThrow('Choice is too high');
 
-    expect(runTest(100, new Random(), new MapDB(), false)(wrapWithName(testFn)))
-      .rejects.toThrow("Predicate failed: b (6) - a (0) > 5")
-  });
+      });
 ```
 
 In practice, better shrinking really does make it much easier to find minimal test cases, which

@@ -51,7 +51,7 @@ import {
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import {Database, IDataStore} from 'minitsis-datastore';
+import { Database, IDataStore } from 'minitsis-datastore';
 
 class DBWrapper implements Database {
   private dataStore: IDataStore<string>;
@@ -73,7 +73,7 @@ class DBWrapper implements Database {
   async delete(key: string): Promise<void> {
     await this.dataStore.delete(key);
   }
-  
+
   async count(): Promise<number> {
     return await this.dataStore.count();
   }
@@ -86,8 +86,8 @@ function toBase64(arrayBuffer: Uint8Array): string {
 function fromBase64(base64String: string): Uint8Array {
   return Uint8Array.from(Buffer.from(base64String, 'base64'));
 }
-import {BrowserDataStore} from 'minitsis-browser';
-import {NodeDataStore} from 'minitsis-node';
+import { BrowserDataStore } from 'minitsis-browser';
+import { NodeDataStore } from 'minitsis-node';
 
 // Function to create a "fake" ChoiceMap that throws when `.get` is called
 function createFakeChoiceMap(): ChoiceMap {
@@ -178,7 +178,7 @@ function wrapWithNameAsync(
 }
 
 describe('Minithesis Tests', () => {
-  test.each(Array.from({length: 1}, (_, i) => i))(
+  test.each(Array.from({ length: 1 }, (_, i) => i))(
     'finds small list new - seed %i',
     async seed => {
       function sum(arr: number[]): number {
@@ -264,8 +264,9 @@ describe('Minithesis Tests', () => {
     );
   });
 
-  describe('test reuses results from the database', () => {
+  describe('README example', () => {
     let tempDirPath: string;
+    let dbLocation: string;
     let count = 0;
 
     beforeAll(async () => {
@@ -273,15 +274,18 @@ describe('Minithesis Tests', () => {
       tempDirPath = await fs.mkdtemp(
         path.join(os.tmpdir(), 'minithesis-test-')
       );
+      dbLocation = tempDirPath + "/test.db"
     });
 
     afterAll(async () => {
       // Cleanup: Remove the temporary directory after the tests
-      await fs.rm(tempDirPath, {recursive: true});
+      await fs.rm(tempDirPath, { recursive: true });
     });
 
     const run = async () => {
-      const db = new DBWrapper(createDataStore<string>(tempDirPath + '/db'));
+      // we could use createDataStore here if we wanted to test in an environment-agnostic way,
+      // but we'll use a NodeDataStore for clarity
+      const db = new DBWrapper(new NodeDataStore<string>(dbLocation));
       const testFn = (testCase: TestCase) => {
         count += 1;
         const choice = testCase.choice(BigInt(10000));
@@ -295,6 +299,43 @@ describe('Minithesis Tests', () => {
       ).rejects.toThrow('Choice is too high');
       return db;
     };
+    describe('test reuses results from the database', () => {
+      let tempDirPath: string;
+      let dbLocation: string;
+
+      // these are just for cleanup: you would usually just have a persistent
+      // test database in a known location.
+      beforeAll(async () => {
+        // Create a temporary directory to act as the database directory
+        tempDirPath = await fs.mkdtemp(
+          path.join(os.tmpdir(), 'minithesis-test-')
+        );
+        dbLocation = tempDirPath + "/test.db"
+      });
+
+      afterAll(async () => {
+        // Cleanup: Remove the temporary directory after the tests
+        await fs.rm(tempDirPath, { recursive: true });
+      });
+
+      test('test README example', async () => {
+        // we could use createDataStore here if we wanted to test in an environment-agnostic way,
+        // but we'll use a NodeDataStore for clarity
+        const db = new DBWrapper(new NodeDataStore<string>(dbLocation));
+        const testFn = (testCase: TestCase) => {
+          count += 1;
+          const choice = testCase.choice(BigInt(10000));
+          if (choice >= BigInt(8)) {
+            throw new Error('Choice is too high');
+          }
+        };
+
+        await expect(
+          runTest(100, 1234, db, false)(wrapWithName(testFn))
+        ).rejects.toThrow('Choice is too high');
+
+      });
+    });
 
     test('database usage and assertion counts', async () => {
       const firstdb = await run();
@@ -336,7 +377,7 @@ describe('Minithesis Tests', () => {
     expect(state.calls).toBe(2);
   });
 
-  test.each(Array.from({length: 100}, (_, i) => i))(
+  test.each(Array.from({ length: 100 }, (_, i) => i))(
     'finds a local maximum - seed %i',
     async seed => {
       const testFn = wrapWithName((testCase: TestCase) => {
@@ -434,7 +475,7 @@ describe('Minithesis Tests', () => {
     );
   });
 
-  test.each(Array.from({length: 10}, (_, i) => i))(
+  test.each(Array.from({ length: 10 }, (_, i) => i))(
     'can target a score downwards - seed %i',
     async seed => {
       // logMock.mockRestore();
@@ -649,9 +690,7 @@ describe('Minithesis Tests', () => {
     const testFn = wrapWithNameAsync(async (tc: TestCase) => {
       tc.any(integers(1, 2));
     });
-    await expect(
-      runTestAsync(100, 1234)(testFn)
-    ).rejects.toThrow('need a db');
+    await expect(runTestAsync(100, 1234)(testFn)).rejects.toThrow('need a db');
   });
 
   test('alertOnFailure is called', async () => {
@@ -712,7 +751,7 @@ describe('Minithesis Tests', () => {
     expect(() => toNumber(BigInt(Number.MAX_SAFE_INTEGER) + 1n)).toThrow(
       'BigInt value is too large to be safely converted to a Number'
     );
-    
+
     // Test too low
     expect(() => toNumber(BigInt(Number.MIN_SAFE_INTEGER) - 1n)).toThrow(
       'BigInt value is too low to be safely converted to a Number'
@@ -727,7 +766,9 @@ describe('Minithesis Tests', () => {
   test('randBigInt validation', () => {
     const random = new Random(1234);
     // Test max < min
-    expect(() => random.randBigInt(10n, 5n)).toThrow('min must be less than or equal to max');
+    expect(() => random.randBigInt(10n, 5n)).toThrow(
+      'min must be less than or equal to max'
+    );
     // Test equal values works fine
     expect(() => random.randBigInt(5n, 5n)).not.toThrow();
     expect(random.randBigInt(5n, 5n)).toBe(5n);
@@ -820,9 +861,9 @@ targetingScore: 0.5
       }
     });
 
-    await expect(
-      runTest(100, 1234, new MapDB())(testFn)
-    ).rejects.toThrow('Found interesting case');
+    await expect(runTest(100, 1234, new MapDB())(testFn)).rejects.toThrow(
+      'Found interesting case'
+    );
   });
 
   test('targeting gives up after too many examples', async () => {
@@ -834,14 +875,16 @@ targetingScore: 0.5
 
     // Use a small maxExamples to ensure targeting gives up quickly
     await runTest(5, 1234, new MapDB(), false)(testFn);
-    
+
     // Test passes if runTest completes without finding an interesting case
     expect(true).toBe(true);
   });
 
   test('replace method edge cases', async () => {
     class TestableState extends TestingState {
-      public async testReplace(values: {[key: number]: bigint}): Promise<boolean> {
+      public async testReplace(values: {
+        [key: number]: bigint;
+      }): Promise<boolean> {
         return await this.replace(values);
       }
     }
@@ -863,12 +906,14 @@ targetingScore: 0.5
     await state.testFunction(TestCase.forChoices([6n]));
 
     // Test index beyond array length
-    const result = await state.testReplace({5: 0n}); // Index 5 is beyond the length of [6n]
+    const result = await state.testReplace({ 5: 0n }); // Index 5 is beyond the length of [6n]
     expect(result).toBe(false);
 
     // Test error when this.result is undefined
     state.result = undefined;
-    await expect(state.testReplace({0: 0n})).rejects.toThrow('should have a result here');
+    await expect(state.testReplace({ 0: 0n })).rejects.toThrow(
+      'should have a result here'
+    );
   });
   test('failure from hypothesis 1', async () => {
     const testFn = wrapWithName((tc: TestCase) => {
