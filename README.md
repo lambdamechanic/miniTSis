@@ -43,6 +43,30 @@ even despite heavy use of bigints rather than numbers, but for my use case, indi
 checks can easily take seconds.)
 
 
+Here is an example of using `minitsis-node` for persistent storage:
+```ts
+import { runTest, Random } from 'minitsis';
+import { NodeDataStore } from 'minitsis-node';
+import { Database } from 'minitsis-datastore';
+
+class DBWrapper implements Database {
+  constructor(private ds: NodeDataStore<string>) {}
+  async set(k: string, v: Uint8Array) {
+    await this.ds.set(k, Buffer.from(v).toString('base64'));
+  }
+  async get(k: string) {
+    const s = await this.ds.get(k);
+    return s ? Uint8Array.from(Buffer.from(s, 'base64')) : null;
+  }
+  async delete(k: string) {
+    await this.ds.delete(k);
+  }
+}
+
+const database = new DBWrapper(new NodeDataStore<string>('./db'));
+await runTest(100, new Random(), database, false)(wrapWithName(testFn));
+```
+
 ## Wow, there really aren't many generators, are there
 
 No, there aren't. Unlike Minithesis, though, I'd quite like for this to work for people
