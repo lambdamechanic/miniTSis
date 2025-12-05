@@ -676,6 +676,29 @@ export function bigIntegers(min: bigint, max: bigint): Possibility<bigint> {
   }, `bigIntegers(${min}, ${max})`);
 }
 
+type EnumLike = Record<string, string | number>;
+
+export function enums<TEnum extends EnumLike>(
+  enumObj: TEnum
+): Possibility<TEnum[keyof TEnum]> {
+  const enumKeys = Object.keys(enumObj).filter(key =>
+    Number.isNaN(Number(key))
+  );
+
+  if (enumKeys.length === 0) {
+    throw new Error('Enum has no values');
+  }
+
+  const values = enumKeys.map(
+    key => enumObj[key as keyof TEnum]
+  ) as Array<TEnum[keyof TEnum]>;
+
+  return new Possibility<TEnum[keyof TEnum]>((testCase: TestCase) => {
+    const idx = toNumber(testCase.choice(BigInt(values.length - 1)));
+    return values[idx];
+  }, `enums(${enumKeys.join('|')})`);
+}
+
 export function sublists<T>(list: T[]): Possibility<T[]> {
   const produce = (testCase: TestCase): T[] => {
     const result: T[] = [];

@@ -29,6 +29,7 @@ import {
   TestingState,
   Unsatisfiable,
   bigIntegers,
+  enums,
   integers,
   just,
   lists,
@@ -980,6 +981,42 @@ targetingScore: 0.5
     await expect(
       runTest(5000, random, database, false)(wrapWithName(testFn))
     ).rejects.toThrow(/broken combination: (1,7|7,1)/);
+  });
+
+  describe('enums generator', () => {
+    enum NumericEnum {
+      Zero,
+      One,
+      Two,
+    }
+
+    enum StringEnum {
+      Up = 'UP',
+      Down = 'DOWN',
+    }
+
+    test('chooses only actual enum values for numeric enums', () => {
+      const forcedValues = [0n, 1n, 2n];
+      const results = forcedValues.map(prefixValue =>
+        TestCase.forChoices([prefixValue]).any(enums(NumericEnum))
+      );
+
+      expect(results).toEqual([NumericEnum.Zero, NumericEnum.One, NumericEnum.Two]);
+      results.forEach(result => expect(typeof result).toBe('number'));
+    });
+
+    test('supports string enums', () => {
+      const up = TestCase.forChoices([0n]).any(enums(StringEnum));
+      const down = TestCase.forChoices([1n]).any(enums(StringEnum));
+
+      expect(up).toBe(StringEnum.Up);
+      expect(down).toBe(StringEnum.Down);
+    });
+
+    test('throws on empty enum-like objects', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => enums({} as any)).toThrow('Enum has no values');
+    });
   });
 
   // derived from bad shrink at https://github.com/dubzzz/fast-check/issues/650#issuecomment-648397230
