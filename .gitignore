@@ -1,0 +1,30 @@
+# Node & package managers
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Turbo repo caches
+.turbo/
+.turbo/cache/
+.turbo/cookies/
+
+# Build artifacts
+dist/
+build/
+coverage/
+tsconfig.tsbuildinfo
+packages/*/dist/
+packages/*/build/
+packages/*/coverage/
+packages/*/tsconfig.tsbuildinfo
+
+# Editor/OS noise
+*.swp
+*.swx
+*.DS_Store
+
+# Local state
+state/
+evtest
+xev.out
