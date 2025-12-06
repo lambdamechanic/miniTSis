@@ -11,7 +11,7 @@ export interface Database {
   set(key: string, value: Uint8Array): Promise<void>;
   get(key: string): Promise<Uint8Array | null>;
   delete(key: string): Promise<void>;
-  count?(): Promise<number>;
+  count(): Promise<number>;
 }
 
 function hasNodeBuffer(): boolean {
@@ -24,12 +24,17 @@ function encodeBase64(data: Uint8Array): string {
   }
 
   if (typeof globalThis === 'object' && 'btoa' in globalThis) {
-    // btoa expects a binary string, so construct one in small chunks to avoid stack issues
-    let binary = '';
-    for (let i = 0; i < data.length; i++) {
-      binary += String.fromCharCode(data[i]);
+    // btoa expects a binary string; build it in chunks to avoid quadratic growth
+    // and keep argument sizes safe for String.fromCharCode.
+    const chunkSize = 8192;
+    const chunks: string[] = [];
+    for (let i = 0; i < data.length; i += chunkSize) {
+      const slice = data.subarray(i, i + chunkSize);
+      chunks.push(String.fromCharCode(...slice));
     }
-    return (globalThis as unknown as {btoa(data: string): string}).btoa(binary);
+    return (globalThis as unknown as {btoa(data: string): string}).btoa(
+      chunks.join('')
+    );
   }
 
   throw new Error('No base64 encoder available in the current environment.');
@@ -80,9 +85,6 @@ export class DBWrapper implements Database {
   }
 
   async count(): Promise<number> {
-    if (!this.dataStore.count) {
-      throw new Error('Underlying data store does not implement count().');
-    }
     return this.dataStore.count();
   }
 }

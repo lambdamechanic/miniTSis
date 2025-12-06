@@ -24,7 +24,7 @@ packages/*/tsconfig.tsbuildinfo
 *.swx
 *.DS_Store
 
-# Local state
-state/
-evtest
-xev.out
+# Local state (dev machine scratch files; safe to ignore if present)
+/state/
+/evtest
+/xev.out
