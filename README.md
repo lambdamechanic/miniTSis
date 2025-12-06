@@ -47,21 +47,7 @@ Here is an example of using `minitsis-node` for persistent storage:
 ```ts
 import { runTest, Random } from 'minitsis';
 import { NodeDataStore } from 'minitsis-node';
-import { Database } from 'minitsis-datastore';
-
-class DBWrapper implements Database {
-  constructor(private ds: NodeDataStore<string>) {}
-  async set(k: string, v: Uint8Array) {
-    await this.ds.set(k, Buffer.from(v).toString('base64'));
-  }
-  async get(k: string) {
-    const s = await this.ds.get(k);
-    return s ? Uint8Array.from(Buffer.from(s, 'base64')) : null;
-  }
-  async delete(k: string) {
-    await this.ds.delete(k);
-  }
-}
+import { DBWrapper } from 'minitsis-datastore';
 
 const database = new DBWrapper(new NodeDataStore<string>('./db'));
 await runTest(100, new Random(), database, false)(wrapWithName(testFn));
