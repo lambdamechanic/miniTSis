@@ -727,6 +727,23 @@ export function just<T>(value: T): Possibility<T> {
   return new Possibility<T>(() => value, `just(${value})`);
 }
 
+export function oneOf<T extends readonly unknown[]>(
+  values: T
+): Possibility<T[number]> {
+  if (values.length === 0) {
+    const name = 'oneOf(<empty>)';
+    return new Possibility(() => {
+      throw new Unsatisfiable();
+    }, name);
+  }
+  // Intentionally keep the full list in the name so failure logs retain
+  // full context; the shrinker will minimise length while preserving meaning.
+  const name = `oneOf(${values.join(',')})`;
+  return new Possibility((tc: TestCase) => {
+    return values[Number(tc.choice(BigInt(values.length - 1)))];
+  }, name);
+}
+
 export function toNumber(bigintValue: bigint): number {
   if (bigintValue > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new Error(

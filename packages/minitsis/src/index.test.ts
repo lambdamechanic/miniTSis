@@ -38,6 +38,7 @@ import {
   lists,
   mixOf,
   nothing,
+  oneOf,
   runTest,
   runTestAsync,
   sublists,
@@ -542,6 +543,22 @@ describe('Minithesis Tests', () => {
       expect(Number(m)).not.toBe(1);
     });
     await runTest(100, 1234, new MapDB(), true)(testFn);
+  });
+
+  test('selects from static list', () => {
+    const tc = TestCase.forChoices([1n]);
+    const letter = tc.any(oneOf(['a', 'b', 'c'] as const));
+    expect(letter).toBe('b');
+  });
+
+  test('rejects empty static list', async () => {
+    const testFn = wrapWithName((tc: TestCase) => {
+      tc.any(oneOf([] as const));
+    });
+
+    await expect(
+      runTest(10, 42, new MapDB(), true)(testFn)
+    ).rejects.toThrow(Unsatisfiable);
   });
 
   test('mapped possibility', async () => {
