@@ -729,7 +729,10 @@ export function just<T>(value: T): Possibility<T> {
 
 export function oneOf<T>(values: readonly T[]): Possibility<T> {
   if (values.length === 0) {
-    return nothing();
+    const name = 'oneOf(<empty>)';
+    return new Possibility(() => {
+      throw new Unsatisfiable();
+    }, name);
   }
   const name = `oneOf(${values.join(',')})`;
   return new Possibility((tc: TestCase) => {
