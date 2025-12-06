@@ -727,6 +727,16 @@ export function just<T>(value: T): Possibility<T> {
   return new Possibility<T>(() => value, `just(${value})`);
 }
 
+export function oneOf<T>(values: readonly T[]): Possibility<T> {
+  if (values.length === 0) {
+    return nothing();
+  }
+  const name = `oneOf(${values.join(',')})`;
+  return new Possibility((tc: TestCase) => {
+    return values[Number(tc.choice(BigInt(values.length - 1)))];
+  }, name);
+}
+
 export function toNumber(bigintValue: bigint): number {
   if (bigintValue > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new Error(
