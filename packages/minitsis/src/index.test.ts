@@ -16,6 +16,10 @@ class MapDB implements Database {
   async delete(key: string): Promise<void> {
     this.data.delete(key);
   }
+
+  async count(): Promise<number> {
+    return this.data.size;
+  }
 }
 
 import {
