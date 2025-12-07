@@ -11,5 +11,7 @@
         "rootDir": "./src",
         "outDir": "./build",
         "composite": true
-    }
+    },
+    "include": ["src/**/*"],
+    "exclude": ["test", "dist", "node_modules"]
 }

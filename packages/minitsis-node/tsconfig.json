@@ -12,6 +12,8 @@
         "outDir": "./build",
         "composite": true
     },
+    "include": ["src/**/*"],
+    "exclude": ["test", "dist", "node_modules"],
     "references": [
 	{"path": "../minitsis-datastore"    }
     ]
