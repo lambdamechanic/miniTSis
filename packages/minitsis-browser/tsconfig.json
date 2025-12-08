@@ -10,6 +10,17 @@
         "forceConsistentCasingInFileNames": true,
         "rootDir": "./src",
         "outDir": "./build",
-        "composite": true
-    }
+        "composite": true,
+        "baseUrl": ".",
+        "paths": {
+            "@minitsis/core": ["../minitsis/src"],
+            "minitsis-datastore": ["../minitsis-datastore/src"]
+        }
+    },
+    "include": ["src/**/*"],
+    "exclude": ["test", "dist", "node_modules"],
+    "references": [
+        {"path": "../minitsis-datastore"},
+        {"path": "../minitsis"}
+    ]
 }

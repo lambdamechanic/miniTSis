@@ -19,10 +19,10 @@
 	"build": "tsc --build --verbose"
     },
     "references": [
-
-	{"path": "./packages/miniTSis-datastore"    },
-	{"path": "./packages/miniTSis-node"    },
-	{"path": "./packages/miniTSis-browser"    },
-	{"path": "./packages/miniTSis"    }
+        {"path": "./packages/minitsis-datastore"},
+        {"path": "./packages/minitsis-node"},
+        {"path": "./packages/minitsis-browser"},
+        {"path": "./packages/minitsis"},
+        {"path": "./packages/minitsis-testkit"}
     ]
 }

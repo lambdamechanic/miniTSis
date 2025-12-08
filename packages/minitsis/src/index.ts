@@ -733,7 +733,7 @@ export function oneOf<T extends readonly unknown[]>(
   if (values.length === 0) {
     const name = 'oneOf(<empty>)';
     return new Possibility(() => {
-      throw new Unsatisfiable();
+      throw new Unsatisfiable('oneOf() cannot be satisfied with an empty list');
     }, name);
   }
   // Intentionally keep the full list in the name so failure logs retain

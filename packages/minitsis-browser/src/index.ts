@@ -1,5 +1,7 @@
-import * as localForage from 'localforage';
-import {IDataStore} from 'minitsis-datastore';
+import localForage from 'localforage';
+import {DBWrapper, Database, IDataStore} from 'minitsis-datastore';
+
+export * from '@minitsis/core';
 
 // BrowserDataStore.ts
 export class BrowserDataStore<U> implements IDataStore<U> {
@@ -27,6 +29,11 @@ export class BrowserDataStore<U> implements IDataStore<U> {
   }
 
   async count(): Promise<number> {
-    return 0; // todo
+    return await localForage.length();
   }
+}
+
+export function createBrowserDatabase(storeName: string): Database {
+  const store = new BrowserDataStore<string>(storeName);
+  return new DBWrapper(store);
 }
