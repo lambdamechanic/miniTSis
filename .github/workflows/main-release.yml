@@ -29,16 +29,34 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check for pending changesets
+        id: changesets
+        run: |
+          set -euo pipefail
+          if [ ! -d .changeset ]; then
+            echo "has_changesets=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGES=$(ls .changeset | grep -E '^[^.].*\\.md$' || true)
+          if [ -n "$CHANGES" ]; then
+            echo "has_changesets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changesets=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.changesets.outputs.has_changesets == 'true'
         with:
           node-version: 20
           cache: npm
           registry-url: https://registry.npmjs.org
 
       - name: Install
+        if: steps.changesets.outputs.has_changesets == 'true'
         run: npm ci
 
       - name: Build and publish with Changesets (OIDC)
+        if: steps.changesets.outputs.has_changesets == 'true'
         uses: changesets/action@v1.5.3
         with:
           publish: "NPM_CONFIG_PROVENANCE=true npm run publish-packages"
