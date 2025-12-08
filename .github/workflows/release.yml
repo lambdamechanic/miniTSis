@@ -45,12 +45,10 @@ jobs:
             }
 
             core.exportVariable('TARGET_SHA', sha);
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ env.TARGET_SHA || github.event.workflow_run.head_sha }}
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
