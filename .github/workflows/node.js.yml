@@ -30,8 +30,8 @@ jobs:
 
       - name: Build shared packages
         run: |
-          npm run build --workspace @minitsis/core
           npm run build --workspace minitsis-datastore
+          npm run build --workspace @minitsis/core
           npm run build --workspace @minitsis/testkit
 
       - name: Build adapters

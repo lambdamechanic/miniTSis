@@ -12,7 +12,7 @@
       "sourceMap": true,
       "composite": true
   }
- ,
+,
   "include": ["src/**/*"],
   "exclude": ["test", "dist", "build", "node_modules"]
 }

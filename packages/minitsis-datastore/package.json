@@ -10,7 +10,6 @@
     "scripts": {
         "build": "tsup src/index.ts --format cjs,esm --dts",
         "compile": "tsc",
-        "prepare": "npm run compile",
         "pretest": "npm run compile"
     },
     "devDependencies": {
