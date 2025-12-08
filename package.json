@@ -22,6 +22,6 @@
     },
     "scripts": {
         "dev": "turbo run dev",
-        "publish-packages": "turbo run build lint test && changeset version && changeset publish"
+        "publish-packages": "changeset version && turbo run build lint test && changeset publish"
     }
 }
