@@ -10,6 +10,9 @@
     ],
     "license": "Apache-2.0",
     "keywords": [],
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
         "build": "npm run compile && tsup src/index.ts --format cjs,esm --tsconfig ./tsconfig.json",
         "compile": "tsc",

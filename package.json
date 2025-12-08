@@ -22,6 +22,7 @@
     },
     "scripts": {
         "dev": "turbo run dev",
-        "publish-packages": "turbo run build lint test && changeset version && changeset publish"
+        "publish-packages": "turbo run build lint test && changeset version && changeset publish",
+        "pack:all": "rm -rf artifacts && mkdir -p artifacts && npm run build --workspace minitsis-datastore --workspace @minitsis/core --workspace @minitsis/testkit --workspace minitsis-node --workspace minitsis-browser && npm pack ./packages/minitsis-datastore --pack-destination artifacts && npm pack ./packages/minitsis --pack-destination artifacts && npm pack ./packages/minitsis-node --pack-destination artifacts && npm pack ./packages/minitsis-browser --pack-destination artifacts"
     }
 }

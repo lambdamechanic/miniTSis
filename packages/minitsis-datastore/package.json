@@ -7,6 +7,9 @@
     "types": "./build/index.d.ts",
     "license": "Apache-2.0",
     "keywords": [],
+    "publishConfig": {
+        "access": "public"
+    },
     "files": [
         "dist/",
         "build/"
