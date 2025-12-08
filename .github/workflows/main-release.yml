@@ -50,6 +50,7 @@ jobs:
         id: changesets
         run: |
           set -euo pipefail
+          npm install --no-save @changesets/cli
           STATUS=$(npx changeset status --output=stdout)
           if ! command -v jq >/dev/null 2>&1; then
             echo "::error::jq is required for changeset detection" >&2
