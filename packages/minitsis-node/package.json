@@ -11,7 +11,7 @@
     "keywords": [],
     "scripts": {
         "build": "tsup src/index.ts --format cjs,esm --dts",
-        "compile": "tsc",
+        "compile": "tsc --build",
         "prepare": "npm run compile",
         "pretest": "npm run compile",
         "test": "jest"
