@@ -22,7 +22,14 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs: [node, browser]
+<<<<<<< HEAD
     timeout-minutes: 10
+||||||| parent of db79c07 (ci: guard release on ci results)
+    timeout-minutes: 20
+    if: needs.node.result == 'success' && needs.browser.result == 'success'
+=======
+    timeout-minutes: 20
+>>>>>>> db79c07 (ci: guard release on ci results)
     if: always()
     steps:
       - name: Verify CI results
@@ -30,10 +37,14 @@ jobs:
           set -euo pipefail
           echo "Node result: ${{ needs.node.result }}"
           echo "Browser result: ${{ needs.browser.result }}"
+<<<<<<< HEAD
           if [ "${{ needs.node.result }}" = "skipped" ] || [ "${{ needs.browser.result }}" = "skipped" ]; then
             echo "::error::Release blocked because a required CI job was skipped; ensure node and browser workflows run for this commit."
             exit 1
           fi
+||||||| parent of db79c07 (ci: guard release on ci results)
+=======
+>>>>>>> db79c07 (ci: guard release on ci results)
           if [ "${{ needs.node.result }}" != "success" ] || [ "${{ needs.browser.result }}" != "success" ]; then
             echo "::error::Release blocked because required CI jobs did not succeed."
             exit 1
@@ -58,6 +69,15 @@ jobs:
           node-version: 20
           cache: npm
           registry-url: https://registry.npmjs.org
+
+      - name: Verify publish token available
+        if: steps.changesets.outputs.has_changesets == 'true'
+        run: |
+          set -euo pipefail
+          if [ -z "${GITHUB_TOKEN:-}" ]; then
+            echo "::error::GITHUB_TOKEN is required for publishing."
+            exit 1
+          fi
 
       - name: Install
         if: steps.changesets.outputs.has_changesets == 'true'
