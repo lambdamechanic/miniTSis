@@ -62,15 +62,12 @@ jobs:
           node-version: 20
           cache: npm
           registry-url: https://registry.npmjs.org
+          always-auth: true
 
       - name: Install
         if: steps.changesets.outputs.has_changesets == 'true'
         run: npm ci
 
-      - name: Build and publish with Changesets (OIDC)
+      - name: Publish packages (OIDC)
         if: steps.changesets.outputs.has_changesets == 'true'
-        uses: changesets/action@v1.5.3
-        with:
-          publish: "NPM_CONFIG_PROVENANCE=true npm run publish-packages"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: NPM_CONFIG_PROVENANCE=true npm run publish-packages
