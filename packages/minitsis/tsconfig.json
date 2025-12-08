@@ -13,6 +13,6 @@
       "composite": true
   }
 ,
-  "files": ["src/index.ts", "src/interfaces.ts", "src/index.test.ts"],
-  "exclude": ["test", "dist", "build", "node_modules"]
+  "files": ["src/index.ts", "src/interfaces.ts"],
+  "exclude": ["test", "dist", "build", "node_modules", "src/index.test.ts"]
 }
