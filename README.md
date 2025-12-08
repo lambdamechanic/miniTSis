@@ -1,5 +1,7 @@
 # MiniTSis
-[![Node.js CI](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.js.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.js.yml)
+[![Node Adapter CI](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.yml)
+[![Browser Adapter CI](https://github.com/lambdamechanic/miniTSis/actions/workflows/browser.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/browser.yml)
+[![Release](https://github.com/lambdamechanic/miniTSis/actions/workflows/release.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/release.yml)
 
 This is a more-or-less faithful clone of David MacIver's [Minithesis](https://github.com/drmaciver/minithesis), a generative testing library.
 As such, it offers internal shrinking and a test case database.
@@ -43,14 +45,37 @@ even despite heavy use of bigints rather than numbers, but for my use case, indi
 checks can easily take seconds.)
 
 
-Here is an example of using `minitsis-node` for persistent storage:
+## Packages and installation
+
+- `@minitsis/core` – environment-agnostic logic and generators
+- `minitsis-datastore` – tiny persistence wrapper (used by both adapters)
+- `minitsis-node` – Node adapter (uses `nedb-promises`)
+- `minitsis-browser` – Browser adapter (uses `localforage`)
+- `@minitsis/testkit` – shared test suite helpers (not generally needed by consumers)
+
+Install what you need (examples):
+```bash
+npm install @minitsis/core minitsis-node            # Node
+npm install @minitsis/core minitsis-browser         # Browser
+```
+
+### Node example with persistent storage
 ```ts
-import { runTest, Random } from 'minitsis';
+import { runTest, Random } from '@minitsis/core';
 import { NodeDataStore } from 'minitsis-node';
 import { DBWrapper } from 'minitsis-datastore';
 
 const database = new DBWrapper(new NodeDataStore<string>('./db'));
 await runTest(100, new Random(), database, false)(wrapWithName(testFn));
+```
+
+### Browser example with localforage
+```ts
+import { runTest, Random } from '@minitsis/core';
+import { createBrowserDatabase } from 'minitsis-browser';
+
+const db = createBrowserDatabase('minitsis-browser-demo');
+await runTest(50, new Random(), db, false)(wrapWithName(testFn));
 ```
 
 ## Wow, there really aren't many generators, are there
@@ -71,10 +96,6 @@ run until they find the breaks again.
 
 ## What's left to do?
 
-I made a halfhearted effort at making it run on the client side by abstracting out the test database
-so that it can be run using `localStorage`, but the test harness still uses the `fs/promises` module
-so I don't expect the test suite to actually run clientside. This is fixable with time and effort.
-
-More generators, as mentioned.
-
-`fast-check` compatibility shim, if possible.
+- More generators (contributions welcome).
+- Better failure context without repeating logic per combinator (tracked in bd as miniTSis-4w0).
+- A `fast-check` compatibility shim, if feasible.
