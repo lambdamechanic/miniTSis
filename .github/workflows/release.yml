@@ -4,7 +4,6 @@ on:
   workflow_run:
     workflows:
       - Node Adapter CI
-      - Browser Adapter CI
     branches:
       - main
     types:
@@ -25,18 +24,27 @@ jobs:
           script: |
             const sha = context.payload.workflow_run?.head_sha || context.sha;
             const required = ["Node Adapter CI", "Browser Adapter CI"];
-            const {data} = await github.rest.checks.listForRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: sha,
-              filter: 'latest'
-            });
 
-            const status = new Map(required.map(name => [name, false]));
-            for (const run of data.check_runs) {
-              if (required.includes(run.name) && run.conclusion === 'success') {
-                status.set(run.name, true);
+            async function getStatus() {
+              const {data} = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: sha,
+                filter: 'latest'
+              });
+              const status = new Map(required.map(name => [name, false]));
+              for (const run of data.check_runs) {
+                if (required.includes(run.name) && run.conclusion === 'success') {
+                  status.set(run.name, true);
+                }
               }
+              return status;
+            }
+
+            let status = await getStatus();
+            for (let i = 0; i < 30 && [...status.values()].some(v => !v); i++) {
+              await new Promise(r => setTimeout(r, 10000));
+              status = await getStatus();
             }
 
             const missing = [...status.entries()].filter(([, ok]) => !ok).map(([name]) => name);
