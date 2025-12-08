@@ -1,5 +1,5 @@
 {
-  "name": "@minitsis/testkit",
+  "name": "minitsis-testkit",
   "version": "6.0.4",
   "private": true,
   "main": "dist/index.js",

@@ -51,7 +51,7 @@ checks can easily take seconds.)
 - `minitsis-datastore` – tiny persistence wrapper (used by both adapters)
 - `minitsis-node` – Node adapter (uses `nedb-promises`)
 - `minitsis-browser` – Browser adapter (uses `localforage`)
-- `@minitsis/testkit` – shared test suite helpers (internal; kept private)
+- `minitsis-testkit` – shared test suite helpers (internal; kept private)
 
 Install what you need (examples):
 ```bash

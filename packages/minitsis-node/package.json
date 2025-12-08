@@ -31,7 +31,7 @@
         }
     },
     "devDependencies": {
-        "@minitsis/testkit": "^6.0.4",
+        "minitsis-testkit": "^6.0.4",
         "@types/jest": "^29.5.12",
         "@types/node": "^20.11.25",
         "jest": "^29.7.0",

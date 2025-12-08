@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 
-import {runCommonMinitsisTests, MinitsisTestAdapter} from '@minitsis/testkit';
+import {runCommonMinitsisTests, MinitsisTestAdapter} from 'minitsis-testkit';
 import {createNodeDatabase} from '../src';
 
 const mkHandle = async () => {

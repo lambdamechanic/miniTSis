@@ -1,4 +1,4 @@
-import {runCommonMinitsisTests, MinitsisTestAdapter} from '@minitsis/testkit';
+import {runCommonMinitsisTests, MinitsisTestAdapter} from 'minitsis-testkit';
 import {createBrowserDatabase} from '../src';
 
 let counter = 0;

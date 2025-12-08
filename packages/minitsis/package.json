@@ -13,7 +13,7 @@
     "scripts": {
         "build": "npm run compile && tsup src/index.ts --format cjs,esm --tsconfig ./tsconfig.json",
         "compile": "tsc",
-        "test": "echo \"Tests moved to @minitsis/testkit; run env packages instead\""
+        "test": "echo \"Tests moved to minitsis-testkit; run env packages instead\""
     },
     "engines": {
         "node": ">=14.14.0"

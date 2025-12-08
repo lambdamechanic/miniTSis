@@ -24,7 +24,7 @@ jobs:
         run: |
           npm run build --workspace minitsis-datastore
           npm run build --workspace minitsis
-          npm run build --workspace @minitsis/testkit
+          npm run build --workspace minitsis-testkit
       - name: Build node adapter
         run: npm run build --workspace minitsis-node
       - name: Test node adapter
