@@ -59,7 +59,7 @@ jobs:
         run: npm ci
 
       - name: Build and publish with Changesets (OIDC)
-        uses: changesets/action@v1.6.2
+        uses: changesets/action@v1.5.3
         with:
           publish: "NPM_CONFIG_PROVENANCE=true npm run publish-packages"
         env:
