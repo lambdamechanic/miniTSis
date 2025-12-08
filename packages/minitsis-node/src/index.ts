@@ -1,7 +1,7 @@
 import Datastore from 'nedb-promises';
 import {DBWrapper, Database, IDataStore} from 'minitsis-datastore';
 
-export * from '@minitsis/core';
+export * from 'minitsis';
 
 export class NodeDataStore<U> implements IDataStore<U> {
   private db: Datastore<U>;
@@ -35,7 +35,7 @@ export class NodeDataStore<U> implements IDataStore<U> {
 
 /**
  * Create a Database implementation backed by nedb on disk.
- * Useful for wiring into {@link runTest} from @minitsis/core without re-creating the wrapper each time.
+ * Useful for wiring into {@link runTest} from minitsis without re-creating the wrapper each time.
  */
 export function createNodeDatabase(path: string): Database {
   const store = new NodeDataStore<string>(path);

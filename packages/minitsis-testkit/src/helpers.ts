@@ -1,4 +1,4 @@
-import {TestCase} from '@minitsis/core';
+import {TestCase} from 'minitsis';
 import type {Database} from 'minitsis-datastore';
 
 // In-memory Database implementation used for most core semantics tests

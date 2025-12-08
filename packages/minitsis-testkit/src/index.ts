@@ -24,7 +24,7 @@ import {
   bigintArraysEqual,
   smallerThan,
   setBufferSize,
-} from '@minitsis/core';
+} from 'minitsis';
 import type {Database} from 'minitsis-datastore';
 import {MapDB, wrapWithName, wrapWithNameAsync} from './helpers';
 import {addPersistenceTests} from './persistence-tests';

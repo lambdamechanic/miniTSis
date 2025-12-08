@@ -20,8 +20,8 @@ jobs:
       - name: Build shared packages
         run: |
           npm run build --workspace minitsis-datastore
-          npm run build --workspace @minitsis/core
-          npm run build --workspace @minitsis/testkit
+          npm run build --workspace minitsis
+          npm run build --workspace minitsis-testkit
       - name: Build browser adapter
         run: npm run build --workspace minitsis-browser
       - name: Test browser adapter (jsdom)

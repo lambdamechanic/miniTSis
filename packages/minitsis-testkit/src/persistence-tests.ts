@@ -1,4 +1,4 @@
-import {runTest, TestCase} from '@minitsis/core';
+import {runTest, TestCase} from 'minitsis';
 import {usingDatabase, wrapWithName} from './helpers';
 import type {MinitsisTestAdapter} from './index';
 

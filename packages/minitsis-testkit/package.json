@@ -1,5 +1,5 @@
 {
-  "name": "@minitsis/testkit",
+  "name": "minitsis-testkit",
   "version": "6.0.4",
   "private": true,
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
     "build": "npm run compile && tsup src/index.ts --format cjs,esm --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@minitsis/core": "^6.0.4",
+    "minitsis": "^6.0.4",
     "minitsis-datastore": "^6.0.4"
   },
   "devDependencies": {
