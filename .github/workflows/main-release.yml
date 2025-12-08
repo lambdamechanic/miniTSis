@@ -31,7 +31,10 @@ jobs:
           echo "Node result: ${{ needs.node.result }}"
           echo "Browser result: ${{ needs.browser.result }}"
           if [ "${{ needs.node.result }}" = "skipped" ] || [ "${{ needs.browser.result }}" = "skipped" ]; then
-            echo "::error::Release blocked because a required CI job was skipped; ensure node and browser workflows run for this commit."
+            which_skipped=""
+            [ "${{ needs.node.result }}" = "skipped" ] && which_skipped="Node"
+            [ "${{ needs.browser.result }}" = "skipped" ] && which_skipped="${which_skipped:+$which_skipped, }Browser"
+            echo "::error::Release blocked because ${which_skipped} CI was skipped; ensure both node and browser workflows run for this commit."
             exit 1
           fi
           if [ "${{ needs.node.result }}" != "success" ] || [ "${{ needs.browser.result }}" != "success" ]; then
@@ -48,8 +51,13 @@ jobs:
         run: |
           set -euo pipefail
           STATUS=$(npx changeset status --output=stdout)
-          export STATUS
-          HAS=$(node -e "const s=JSON.parse(process.env.STATUS); console.log(s.releases && s.releases.length > 0 ? 'true' : 'false');")
+          HAS="false"
+          if command -v jq >/dev/null 2>&1; then
+            HAS=$(printf '%s' "$STATUS" | jq -r '(.releases | length) > 0')
+          else
+            export STATUS
+            HAS=$(node -e "const s=JSON.parse(process.env.STATUS); console.log(s.releases && s.releases.length > 0 ? 'true' : 'false');")
+          fi
           echo "has_changesets=$HAS" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
