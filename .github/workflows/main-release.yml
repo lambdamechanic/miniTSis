@@ -51,13 +51,11 @@ jobs:
         run: |
           set -euo pipefail
           STATUS=$(npx changeset status --output=stdout)
-          HAS="false"
-          if command -v jq >/dev/null 2>&1; then
-            HAS=$(printf '%s' "$STATUS" | jq -r '(.releases | length) > 0')
-          else
-            export STATUS
-            HAS=$(node -e "const s=JSON.parse(process.env.STATUS); console.log(s.releases && s.releases.length > 0 ? 'true' : 'false');")
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is required for changeset detection" >&2
+            exit 1
           fi
+          HAS=$(printf '%s' "$STATUS" | jq -r '(.releases | length) > 0')
           echo "has_changesets=$HAS" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
