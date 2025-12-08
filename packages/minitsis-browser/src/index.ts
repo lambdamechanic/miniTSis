@@ -4,19 +4,19 @@ import {DBWrapper, Database, IDataStore} from 'minitsis-datastore';
 export * from '@minitsis/core';
 
 // BrowserDataStore.ts
-export class BrowserDataStore<U> implements IDataStore<U> {
+export class BrowserDataStore implements IDataStore<string> {
   constructor(private storeName: string) {
     localForage.config({
       name: this.storeName,
     });
   }
 
-  async set(key: string, value: U): Promise<void> {
+  async set(key: string, value: string): Promise<void> {
     await localForage.setItem(key, value);
   }
 
-  async get(key: string): Promise<U | null> {
-    const value = await localForage.getItem<U>(key);
+  async get(key: string): Promise<string | null> {
+    const value = await localForage.getItem<string>(key);
     return value ?? null;
   }
 
@@ -34,6 +34,6 @@ export class BrowserDataStore<U> implements IDataStore<U> {
 }
 
 export function createBrowserDatabase(storeName: string): Database {
-  const store = new BrowserDataStore<string>(storeName);
+  const store = new BrowserDataStore(storeName);
   return new DBWrapper(store);
 }

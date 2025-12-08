@@ -1,9 +1,18 @@
-import {TextDecoder, TextEncoder} from 'util';
 import {createBrowserDatabase} from '../src';
 
-const toBytes = (s: string) => new TextEncoder().encode(s);
+const getEncoder = () =>
+  typeof TextEncoder !== 'undefined'
+    ? new TextEncoder()
+    : new (require('util').TextEncoder)();
+
+const getDecoder = () =>
+  typeof TextDecoder !== 'undefined'
+    ? new TextDecoder()
+    : new (require('util').TextDecoder)();
+
+const toBytes = (s: string) => getEncoder().encode(s);
 const fromBytes = (b: Uint8Array | null) =>
-  b ? new TextDecoder().decode(b) : null;
+  b ? getDecoder().decode(b) : null;
 
 describe('browser adapter integration', () => {
   test('round-trips strings and clears', async () => {

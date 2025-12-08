@@ -24,7 +24,7 @@ jobs:
       - name: Install
         run: npm ci
       - name: Build and publish with Changesets (OIDC)
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
           publish: "NPM_CONFIG_PROVENANCE=true npm run publish-packages"
         env:
