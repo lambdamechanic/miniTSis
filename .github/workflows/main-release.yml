@@ -50,14 +50,11 @@ jobs:
         id: changesets
         run: |
           set -euo pipefail
-          npm install --no-save @changesets/cli
-          STATUS=$(npx changeset status --output=stdout)
-          if ! command -v jq >/dev/null 2>&1; then
-            echo "::error::jq is required for changeset detection" >&2
-            exit 1
+          if ls .changeset/*.md >/dev/null 2>&1; then
+            echo "has_changesets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changesets=false" >> "$GITHUB_OUTPUT"
           fi
-          HAS=$(printf '%s' "$STATUS" | jq -r '(.releases | length) > 0')
-          echo "has_changesets=$HAS" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         if: steps.changesets.outputs.has_changesets == 'true'
