@@ -1,6 +1,6 @@
 {
     "name": "minitsis-datastore",
-    "version": "6.0.4",
+    "version": "6.1.0",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
@@ -32,7 +32,9 @@
     },
     "typesVersions": {
         "*": {
-            "*": ["./build/index.d.ts"]
+            "*": [
+                "./build/index.d.ts"
+            ]
         }
     }
 }

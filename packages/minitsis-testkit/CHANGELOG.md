@@ -1,4 +1,4 @@
-# minitsis-datastore
+# @minitsis/testkit
 
 ## 6.1.0
 
@@ -6,32 +6,8 @@
 
 - d2fa95c: Collects recent functional changes since 6.0.2: adds the `oneOf` static-list combinator, exposes DBWrapper/export helpers and adapter-facing entrypoints in node/browser packages, and hardens the release pipeline to publish only after both adapters pass CI.
 
-## 1.3.0
-
-### Minor Changes
-
-- packaging
-
-## 1.2.0
-
-### Minor Changes
-
-- packaging
-
-## 1.1.1
-
 ### Patch Changes
 
-- packaging
-
-## 1.2.0
-
-### Minor Changes
-
-- fixing exports
-
-## 1.1.0
-
-### Minor Changes
-
-- packaging changes
+- Updated dependencies [d2fa95c]
+  - @minitsis/core@6.1.0
+  - minitsis-datastore@6.1.0

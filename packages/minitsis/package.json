@@ -1,6 +1,6 @@
 {
     "name": "@minitsis/core",
-    "version": "6.0.4",
+    "version": "6.1.0",
     "description": "",
     "main": "dist/index.js",
     "types": "build/index.d.ts",
@@ -19,7 +19,7 @@
         "node": ">=14.14.0"
     },
     "dependencies": {
-        "minitsis-datastore": "^6.0.4",
+        "minitsis-datastore": "^6.1.0",
         "uuid": "*"
     },
     "devDependencies": {
