@@ -15,6 +15,7 @@
     "include": ["src/**/*"],
     "exclude": ["test", "dist", "node_modules"],
     "references": [
-	{"path": "../minitsis-datastore"    }
+	{"path": "../minitsis-datastore"    },
+	{"path": "../minitsis"}
     ]
 }
