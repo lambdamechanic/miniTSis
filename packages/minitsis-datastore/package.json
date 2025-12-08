@@ -20,6 +20,9 @@
         "tsup": "^8.0.2",
         "typescript": "~5.2.0"
     },
+    "publishConfig": {
+        "access": "public"
+    },
     "exports": {
         ".": {
             "types": "./build/index.d.ts",
