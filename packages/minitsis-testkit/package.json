@@ -2,12 +2,13 @@
   "name": "@minitsis/testkit",
   "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
-  "files": ["src/"],
+  "main": "dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./build/index.d.ts",
+  "files": ["dist/", "build/"],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts"
+    "compile": "tsc -p ./tsconfig.json --emitDeclarationOnly",
+    "build": "npm run compile && tsup src/index.ts --format cjs,esm --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "@minitsis/core": "^6.0.3",

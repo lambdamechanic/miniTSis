@@ -3,9 +3,10 @@
     "version": "1.3.0",
     "main": "dist/index.js",
     "module": "./dist/index.mjs",
-    "types": "dist/index.d.ts",
+    "types": "build/index.d.ts",
     "files": [
-        "dist/"
+        "dist/",
+        "build/"
     ],
     "dependencies": {
         "@minitsis/core": "^6.0.3",
@@ -13,7 +14,7 @@
         "localforage": "^1.10.0"
     },
     "scripts": {
-        "build": "tsup src/index.ts --format cjs,esm --dts",
+        "build": "npm run compile && tsup src/index.ts --format cjs,esm --tsconfig ./tsconfig.json",
         "compile": "tsc --build",
         "test": "jest"
     },
@@ -21,7 +22,7 @@
         ".": {
             "import": "./dist/index.mjs",
             "require": "./dist/index.js",
-            "types": "./dist/index.d.ts"
+            "types": "./build/index.d.ts"
         }
     },
     "devDependencies": {
