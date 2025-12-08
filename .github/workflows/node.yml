@@ -1,0 +1,31 @@
+name: Node Adapter CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install all workspaces
+        run: npm ci
+      - name: Build shared packages
+        run: |
+          npm run build --workspace minitsis-datastore
+          npm run build --workspace @minitsis/core
+          npm run build --workspace @minitsis/testkit
+      - name: Build node adapter
+        run: npm run build --workspace minitsis-node
+      - name: Test node adapter
+        run: npm test --workspace minitsis-node
