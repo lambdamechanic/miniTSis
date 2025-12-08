@@ -47,7 +47,7 @@ checks can easily take seconds.)
 
 ## Packages and installation
 
-- `@minitsis/core` – environment-agnostic logic and generators
+- `minitsis` – environment-agnostic logic and generators
 - `minitsis-datastore` – tiny persistence wrapper (used by both adapters)
 - `minitsis-node` – Node adapter (uses `nedb-promises`)
 - `minitsis-browser` – Browser adapter (uses `localforage`)
@@ -55,8 +55,8 @@ checks can easily take seconds.)
 
 Install what you need (examples):
 ```bash
-npm install @minitsis/core minitsis-node            # Node
-npm install @minitsis/core minitsis-browser         # Browser
+npm install minitsis minitsis-node            # Node
+npm install minitsis minitsis-browser         # Browser
 ```
 
 ## Releases
@@ -67,7 +67,7 @@ npm install @minitsis/core minitsis-browser         # Browser
 
 ### Node example with persistent storage
 ```ts
-import { runTest, Random } from '@minitsis/core';
+import { runTest, Random } from 'minitsis';
 import { NodeDataStore } from 'minitsis-node';
 import { DBWrapper } from 'minitsis-datastore';
 
@@ -77,7 +77,7 @@ await runTest(100, new Random(), database, false)(wrapWithName(testFn));
 
 ### Browser example with localforage
 ```ts
-import { runTest, Random } from '@minitsis/core';
+import { runTest, Random } from 'minitsis';
 import { createBrowserDatabase } from 'minitsis-browser';
 
 const db = createBrowserDatabase('minitsis-browser-demo');

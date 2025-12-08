@@ -20,7 +20,7 @@
         "node": ">=14.14.0"
     },
     "dependencies": {
-        "@minitsis/core": "^6.0.4",
+        "minitsis": "^6.0.4",
         "minitsis-datastore": "^6.0.4",
         "nedb-promises": "^6.2.3"
     },

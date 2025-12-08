@@ -9,7 +9,7 @@
         "build/"
     ],
     "dependencies": {
-        "@minitsis/core": "^6.0.4",
+        "minitsis": "^6.0.4",
         "minitsis-datastore": "^6.0.4",
         "localforage": "^1.10.0"
     },

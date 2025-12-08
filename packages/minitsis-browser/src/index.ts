@@ -1,7 +1,7 @@
 import localForage from 'localforage';
 import {DBWrapper, Database, IDataStore} from 'minitsis-datastore';
 
-export * from '@minitsis/core';
+export * from 'minitsis';
 
 // BrowserDataStore.ts
 export class BrowserDataStore implements IDataStore<string> {
