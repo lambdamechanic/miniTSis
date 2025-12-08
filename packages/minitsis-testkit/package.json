@@ -1,6 +1,7 @@
 {
   "name": "@minitsis/testkit",
   "version": "6.0.4",
+  "private": true,
   "main": "dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./build/index.d.ts",
@@ -15,8 +16,5 @@
   },
   "devDependencies": {
     "typescript": "~5.2.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

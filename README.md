@@ -51,13 +51,19 @@ checks can easily take seconds.)
 - `minitsis-datastore` – tiny persistence wrapper (used by both adapters)
 - `minitsis-node` – Node adapter (uses `nedb-promises`)
 - `minitsis-browser` – Browser adapter (uses `localforage`)
-- `@minitsis/testkit` – shared test suite helpers (not generally needed by consumers)
+- `@minitsis/testkit` – shared test suite helpers (internal; kept private)
 
 Install what you need (examples):
 ```bash
 npm install @minitsis/core minitsis-node            # Node
 npm install @minitsis/core minitsis-browser         # Browser
 ```
+
+## Releases
+
+- Every push to `main` auto-publishes to npm after **both** Node Adapter CI and Browser Adapter CI finish green.
+- Publishing uses npm trusted publishing via OIDC; no `NPM_TOKEN` secret is stored.
+- Release workflow: `.github/workflows/release.yml`.
 
 ### Node example with persistent storage
 ```ts
