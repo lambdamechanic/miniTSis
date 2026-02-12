@@ -72,6 +72,22 @@ jobs:
         if: steps.changesets.outputs.has_changesets == 'true'
         run: npm run release:check-prereqs
 
+      - name: Version packages (changesets) and commit
+        if: steps.changesets.outputs.has_changesets == 'true'
+        run: |
+          set -euo pipefail
+          npm exec --no -- changeset version
+
+          if git diff --quiet; then
+            echo "::error::changeset version produced no git changes; refusing to continue with publish/tag."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(release): version packages"
+
       - name: Publish packages (OIDC)
         if: steps.changesets.outputs.has_changesets == 'true'
         run: NPM_CONFIG_PROVENANCE=true npm run publish-packages
@@ -86,3 +102,17 @@ jobs:
             echo "::error::Release artifacts failed after successful publish."
             exit 1
           fi
+
+      - name: Push version bump commit to main
+        if: steps.changesets.outputs.has_changesets == 'true'
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          remote_main="$(git rev-parse origin/main)"
+          if ! git merge-base --is-ancestor "${remote_main}" HEAD; then
+            echo "::error::origin/main moved during release; refusing to push version bump commit. Manual intervention required."
+            echo "::error::origin/main=${remote_main}"
+            echo "::error::release_commit=$(git rev-parse HEAD)"
+            exit 1
+          fi
+          git push origin HEAD:refs/heads/main

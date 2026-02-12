@@ -3,11 +3,33 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORKFLOW_FILE="${ROOT_DIR}/.github/workflows/main-release.yml"
+PACKAGE_JSON="${ROOT_DIR}/package.json"
+ARTIFACT_SCRIPT="${ROOT_DIR}/.github/scripts/create-release-artifacts.sh"
 
 assert_contains() {
   local pattern="$1"
   local description="$2"
   if ! grep -Fq "$pattern" "${WORKFLOW_FILE}"; then
+    echo "::error::${description}"
+    exit 1
+  fi
+}
+
+assert_file_contains() {
+  local file="$1"
+  local pattern="$2"
+  local description="$3"
+  if ! grep -Fq "$pattern" "${file}"; then
+    echo "::error::${description}"
+    exit 1
+  fi
+}
+
+assert_file_not_contains() {
+  local file="$1"
+  local pattern="$2"
+  local description="$3"
+  if grep -Fq "$pattern" "${file}"; then
     echo "::error::${description}"
     exit 1
   fi
@@ -28,6 +50,12 @@ fi
 
 assert_contains "if: steps.changesets.outputs.has_changesets == 'true'" "Release workflow must gate publish and artifact steps behind pending changesets."
 assert_contains "Release artifacts failed after successful publish." "Release workflow must report explicit artifact failure semantics."
+assert_contains "name: Version packages (changesets) and commit" "Release workflow must commit changeset version bumps before publish/tag so v<version> points at a versioned commit."
+assert_contains "name: Push version bump commit to main" "Release workflow must persist changesets version bump commit back to main after successful publish/artifacts."
+
+assert_file_not_contains "${PACKAGE_JSON}" "changeset version" "publish-packages must not run changeset version; versioning must happen in a dedicated commit step before tagging."
+assert_file_contains "${ARTIFACT_SCRIPT}" "git status --porcelain" "create-release-artifacts must refuse to tag when the working tree is dirty."
+assert_file_contains "${ARTIFACT_SCRIPT}" "Working tree is dirty" "create-release-artifacts must emit a clear error when refusing to tag due to uncommitted changes."
 
 run_release_model() {
   local has_changesets="$1"

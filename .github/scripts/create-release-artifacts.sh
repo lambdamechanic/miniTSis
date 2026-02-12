@@ -35,6 +35,11 @@ if ! gh api /user >/dev/null 2>&1; then
   die "GitHub auth failed (gh api /user). Ensure GH_TOKEN is valid and has repo permissions."
 fi
 
+if [ -n "$(git status --porcelain)" ]; then
+  git status --porcelain 1>&2 || true
+  die "Working tree is dirty; tag/release must point at a committed version bump (not uncommitted changeset output)."
+fi
+
 version="$(node -p "require('./packages/minitsis/package.json').version")"
 tag="v${version}"
 
