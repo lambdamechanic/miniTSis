@@ -28,6 +28,7 @@ export function setBufferSize(n) {
 export class Unsatisfiable extends Error {}
 export class StopTest extends Error {}
 export class Frozen extends Error {}
+const ERROR_CONTEXT_ADDED = Symbol('minitsis.errorContextAdded');
 
 export class Possibility<T> implements IPossibility<T> {
   public produce: (testCase: ITestCase) => T;
@@ -782,6 +783,7 @@ export class TestCase {
   random: Random;
   maxSize: number;
   choices: bigint[] = [];
+  possibilityStack: string[] = [];
   status?: Status;
   printResults: boolean;
   depth = 0;
@@ -875,23 +877,61 @@ export class TestCase {
   }
 
   any<U>(possibility: Possibility<U>): U {
-    //    console.error(`entering any with this ${this} and ${possibility} at ${this.depth}`);
+    // Keep a centralized possibility stack so nested errors include context
+    // without each combinator needing custom logging.
     let result: U;
+    const possibilityName = possibility.toString();
+    this.possibilityStack.push(possibilityName);
     try {
       this.depth += 1;
-      // console.log("possibility is", possibility);
       result = possibility.produce(this);
-      //console.log("possibility production", result);
+    } catch (error) {
+      throw this.withPossibilityContext(error);
     } finally {
       this.depth -= 1;
+      this.possibilityStack.pop();
     }
-    //console.warn(`exiting any with [${result}] and ${possibility} at ${this.depth}: printable: ${this.shouldPrint()}`);
+
     if (this.shouldPrint()) {
       console.log(`any(${possibility}): [${result}]`);
-      // console.warn(`any(${possibility}): [${JSON.stringify(result, null, 2)}]`);
     }
 
     return result;
+  }
+
+  private withPossibilityContext(error: unknown): unknown {
+    if (
+      error instanceof StopTest ||
+      error instanceof Frozen ||
+      error instanceof Unsatisfiable
+    ) {
+      return error;
+    }
+
+    const context = this.formatErrorContext();
+
+    if (error instanceof Error) {
+      const taggedError = error as Error & {[ERROR_CONTEXT_ADDED]?: boolean};
+      if (!taggedError[ERROR_CONTEXT_ADDED]) {
+        taggedError.message = `${taggedError.message}\n\nminitsis context:\n${context}`;
+        taggedError[ERROR_CONTEXT_ADDED] = true;
+      }
+      return taggedError;
+    }
+
+    return new Error(`${String(error)}\n\nminitsis context:\n${context}`);
+  }
+
+  private formatErrorContext(): string {
+    const stack =
+      this.possibilityStack.length > 0
+        ? this.possibilityStack.join(' -> ')
+        : '<none>';
+
+    return `possibilityStack: ${stack}
+choices: [${this.choices.map(x => x.toString()).join(', ')}]
+prefix: [${this.prefix.map(x => x.toString()).join(', ')}]
+depth: ${this.depth}`;
   }
 
   markStatus(status: Status): never {

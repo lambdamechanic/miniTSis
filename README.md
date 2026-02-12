@@ -103,5 +103,4 @@ run until they find the breaks again.
 ## What's left to do?
 
 - More generators (contributions welcome).
-- Better failure context without repeating logic per combinator (tracked in bd as miniTSis-4w0).
 - A `fast-check` compatibility shim, if feasible.

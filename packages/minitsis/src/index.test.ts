@@ -25,6 +25,7 @@ class MapDB implements Database {
 import {
   CachedTestFunction,
   Frozen,
+  Possibility,
   Random,
   Status,
   StopTest,
@@ -559,6 +560,31 @@ describe('Minithesis Tests', () => {
     await expect(
       runTest(10, 42, new MapDB(), true)(testFn)
     ).rejects.toThrow(Unsatisfiable);
+  });
+
+  test('adds centralized possibility context to nested errors', async () => {
+    const leaf = new Possibility<number>(tc => {
+      tc.choice(5n);
+      throw new Error('boom');
+    }, 'leaf');
+    const outer = new Possibility<number>(tc => {
+      return tc.any(leaf);
+    }, 'outer');
+    const testFn = wrapWithName((tc: TestCase) => {
+      tc.any(outer);
+    });
+
+    try {
+      await runTest(10, 42, new MapDB(), true)(testFn);
+      throw new Error('Expected runTest to throw');
+    } catch (error) {
+      const message = (error as Error).message;
+      expect(message).toContain('boom');
+      expect(message).toContain('minitsis context:');
+      expect(message).toContain('possibilityStack: outer -> leaf');
+      expect(message).toContain('choices: [');
+      expect(message.match(/minitsis context:/g)).toHaveLength(1);
+    }
   });
 
   test('mapped possibility', async () => {
