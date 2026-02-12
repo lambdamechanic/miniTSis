@@ -1,4 +1,4 @@
-import {createBrowserDatabase} from '../src';
+import {BrowserDataStore, createBrowserDatabase} from '../src';
 
 const getEncoder = () =>
   typeof TextEncoder !== 'undefined'
@@ -31,5 +31,27 @@ describe('browser adapter integration', () => {
     await db.set('obj', toBytes(JSON.stringify(payload)));
     const loaded = await db.get('obj');
     expect(JSON.parse(fromBytes(loaded) || '')).toEqual(payload);
+  });
+
+  test('isolates localforage state across datastore instances', async () => {
+    const suffix = `${Date.now()}-${Math.random()}`;
+    const storeA = new BrowserDataStore(`minitsis-test-isolated-a-${suffix}`);
+    const storeB = new BrowserDataStore(`minitsis-test-isolated-b-${suffix}`);
+
+    await storeA.set('a', 'value-a');
+    await storeB.set('b', 'value-b');
+
+    expect(await storeA.get('a')).toBe('value-a');
+    expect(await storeB.get('b')).toBe('value-b');
+    expect(await storeA.count()).toBe(1);
+    expect(await storeB.count()).toBe(1);
+
+    await storeA.clear();
+
+    expect(await storeA.count()).toBe(0);
+    expect(await storeB.count()).toBe(1);
+    expect(await storeB.get('b')).toBe('value-b');
+
+    await storeB.clear();
   });
 });

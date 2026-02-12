@@ -5,31 +5,33 @@ export * from 'minitsis';
 
 // BrowserDataStore.ts
 export class BrowserDataStore implements IDataStore<string> {
+  private readonly store: typeof localForage;
+
   constructor(private storeName: string) {
-    localForage.config({
+    this.store = localForage.createInstance({
       name: this.storeName,
     });
   }
 
   async set(key: string, value: string): Promise<void> {
-    await localForage.setItem(key, value);
+    await this.store.setItem(key, value);
   }
 
   async get(key: string): Promise<string | null> {
-    const value = await localForage.getItem<string>(key);
+    const value = await this.store.getItem<string>(key);
     return value ?? null;
   }
 
   async delete(key: string): Promise<void> {
-    await localForage.removeItem(key);
+    await this.store.removeItem(key);
   }
 
   async clear(): Promise<void> {
-    await localForage.clear();
+    await this.store.clear();
   }
 
   async count(): Promise<number> {
-    return await localForage.length();
+    return await this.store.length();
   }
 }
 
