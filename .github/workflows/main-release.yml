@@ -68,6 +68,10 @@ jobs:
         if: steps.changesets.outputs.has_changesets == 'true'
         run: npm ci
 
+      - name: Verify publish prerequisites
+        if: steps.changesets.outputs.has_changesets == 'true'
+        run: npm run release:check-prereqs
+
       - name: Publish packages (OIDC)
         if: steps.changesets.outputs.has_changesets == 'true'
         run: NPM_CONFIG_PROVENANCE=true npm run publish-packages

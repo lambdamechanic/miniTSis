@@ -17,11 +17,14 @@
         "@types/node": "^20.11.25",
         "changeset": "^0.2.6",
         "gts": "^5.2.0",
+        "turbo": "^2.3.3",
         "ts-node": "^10.9.2",
         "tsup": "^8.0.2"
     },
     "scripts": {
         "dev": "turbo run dev",
-        "publish-packages": "changeset version && turbo run build lint test && changeset publish"
+        "release:check-prereqs": "bash .github/scripts/check-release-prereqs.sh",
+        "release:validate-missing-prereq": "bash scripts/release/validate-missing-prereq.sh",
+        "publish-packages": "npm exec --no -- changeset version && npm exec --no -- turbo run build lint test && npm exec --no -- changeset publish"
     }
 }
