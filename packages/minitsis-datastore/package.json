@@ -1,12 +1,26 @@
 {
     "name": "minitsis-datastore",
     "version": "6.0.4",
-    "description": "",
+    "description": "Shared datastore interfaces and helpers for miniTSis adapters.",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "types": "./build/index.d.ts",
     "license": "Apache-2.0",
-    "keywords": [],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lambdamechanic/miniTSis.git"
+    },
+    "homepage": "https://github.com/lambdamechanic/miniTSis#readme",
+    "bugs": {
+        "url": "https://github.com/lambdamechanic/miniTSis/issues"
+    },
+    "keywords": [
+        "typescript",
+        "state",
+        "immutable",
+        "datastore",
+        "minitsis"
+    ],
     "files": [
         "dist/",
         "build/"

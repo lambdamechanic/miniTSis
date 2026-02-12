@@ -1,6 +1,7 @@
 {
     "name": "minitsis-browser",
     "version": "6.0.4",
+    "description": "Browser persistence adapter for miniTSis using LocalForage.",
     "main": "dist/index.js",
     "module": "./dist/index.mjs",
     "types": "build/index.d.ts",
@@ -13,6 +14,22 @@
         "minitsis-datastore": "^6.0.4",
         "localforage": "^1.10.0"
     },
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lambdamechanic/miniTSis.git"
+    },
+    "homepage": "https://github.com/lambdamechanic/miniTSis#readme",
+    "bugs": {
+        "url": "https://github.com/lambdamechanic/miniTSis/issues"
+    },
+    "keywords": [
+        "typescript",
+        "state",
+        "immutable",
+        "browser",
+        "minitsis"
+    ],
     "scripts": {
         "build": "npm run compile && tsup src/index.ts --format cjs,esm --tsconfig ./tsconfig.json",
         "compile": "tsc --build",

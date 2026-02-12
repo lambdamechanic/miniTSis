@@ -1,7 +1,7 @@
 {
     "name": "minitsis",
     "version": "6.0.4",
-    "description": "",
+    "description": "Core tiny immutable state container for TypeScript.",
     "main": "dist/index.js",
     "types": "build/index.d.ts",
     "files": [
@@ -9,7 +9,21 @@
         "build/"
     ],
     "license": "Apache-2.0",
-    "keywords": [],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lambdamechanic/miniTSis.git"
+    },
+    "homepage": "https://github.com/lambdamechanic/miniTSis#readme",
+    "bugs": {
+        "url": "https://github.com/lambdamechanic/miniTSis/issues"
+    },
+    "keywords": [
+        "typescript",
+        "state",
+        "immutable",
+        "store",
+        "minitsis"
+    ],
     "scripts": {
         "build": "npm run compile && tsup src/index.ts --format cjs,esm --tsconfig ./tsconfig.json",
         "compile": "tsc",
