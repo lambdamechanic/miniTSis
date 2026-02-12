@@ -1,7 +1,7 @@
 # MiniTSis
 [![Node Adapter CI](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/node.yml)
 [![Browser Adapter CI](https://github.com/lambdamechanic/miniTSis/actions/workflows/browser.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/browser.yml)
-[![Release](https://github.com/lambdamechanic/miniTSis/actions/workflows/release.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/release.yml)
+[![Release](https://github.com/lambdamechanic/miniTSis/actions/workflows/main-release.yml/badge.svg)](https://github.com/lambdamechanic/miniTSis/actions/workflows/main-release.yml)
 
 This is a more-or-less faithful clone of David MacIver's [Minithesis](https://github.com/drmaciver/minithesis), a generative testing library.
 As such, it offers internal shrinking and a test case database.
@@ -63,7 +63,7 @@ npm install minitsis minitsis-browser         # Browser
 
 - Every push to `main` auto-publishes to npm after **both** Node Adapter CI and Browser Adapter CI finish green.
 - Publishing uses npm trusted publishing via OIDC; no `NPM_TOKEN` secret is stored.
-- Release workflow: `.github/workflows/release.yml`.
+- Release workflow: `.github/workflows/main-release.yml`.
 
 ### Node example with persistent storage
 ```ts

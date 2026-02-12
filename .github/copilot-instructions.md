@@ -1,139 +1,55 @@
-# GitHub Copilot Instructions for Beads
+# GitHub Copilot Instructions for miniTSis
 
-## Project Overview
+## Project Context
 
-**beads** (command: `bd`) is a Git-backed issue tracker designed for AI-supervised coding workflows. We dogfood our own tool for all task tracking.
+miniTSis is a TypeScript monorepo for generative/property-based testing with internal shrinking and persistent test-case databases.
 
-**Key Features:**
-- Dependency-aware issue tracking
-- Auto-sync with Git via JSONL
-- AI-optimized CLI with JSON output
-- Built-in daemon for background operations
-- MCP server integration for Claude and other AI assistants
+Packages in this workspace:
+- `minitsis` (core generators/runtime)
+- `minitsis-datastore` (shared persistence wrapper)
+- `minitsis-node` (Node adapter)
+- `minitsis-browser` (browser adapter)
+- `minitsis-testkit` (shared test helpers; private)
 
-## Tech Stack
+## Workflow Expectations
 
-- **Language**: Go 1.21+
-- **Storage**: SQLite (internal/storage/sqlite/)
-- **CLI Framework**: Cobra
-- **Testing**: Go standard testing + table-driven tests
-- **CI/CD**: GitHub Actions
-- **MCP Server**: Python (integrations/beads-mcp/)
+- Keep package versions in lockstep across `minitsis`, `minitsis-datastore`, `minitsis-node`, `minitsis-browser`, and `minitsis-testkit`.
+- Use the release workflow file name as it exists in-repo: `.github/workflows/main-release.yml`.
+- Prefer targeted, minimal diffs that preserve current behavior unless a task explicitly requires change.
 
-## Coding Guidelines
+## Build, Test, and Validation
 
-### Testing
-- Always write tests for new features
-- Use `BEADS_DB=/tmp/test.db` to avoid polluting production database
-- Run `go test -short ./...` before committing
-- Never create test issues in production DB (use temporary DB)
-
-### Code Style
-- Run `golangci-lint run ./...` before committing
-- Follow existing patterns in `cmd/bd/` for new commands
-- Add `--json` flag to all commands for programmatic use
-- Update docs when changing behavior
-
-### Git Workflow
-- Always commit `.beads/issues.jsonl` with code changes
-- Run `bd sync` at end of work sessions
-- Install git hooks: `bd hooks install` (ensures DB ↔ JSONL consistency)
-
-## Issue Tracking with bd
-
-**CRITICAL**: This project uses **bd** for ALL task tracking. Do NOT create markdown TODO lists.
-
-### Essential Commands
+Run from repo root unless a task says otherwise:
 
 ```bash
-# Find work
-bd ready --json                    # Unblocked issues
-bd stale --days 30 --json          # Forgotten issues
-
-# Create and manage
-bd create "Title" -t bug|feature|task -p 0-4 --json
-bd create "Subtask" --parent <epic-id> --json  # Hierarchical subtask
-bd update <id> --status in_progress --json
-bd close <id> --reason "Done" --json
-
-# Search
-bd list --status open --priority 1 --json
-bd show <id> --json
-
-# Sync (CRITICAL at end of session!)
-bd sync  # Force immediate export/commit/push
+npm ci
+npm exec --no -- turbo run build lint test
+npm run release:check-prereqs
+npm run release:validate-missing-prereq
+npm run release:validate-artifact-coupling
 ```
 
-### Workflow
+For OpenSpec changes, run strict validation:
 
-1. **Check ready work**: `bd ready --json`
-2. **Claim task**: `bd update <id> --status in_progress`
-3. **Work on it**: Implement, test, document
-4. **Discover new work?** `bd create "Found bug" -p 1 --deps discovered-from:<parent-id> --json`
-5. **Complete**: `bd close <id> --reason "Done" --json`
-6. **Sync**: `bd sync` (flushes changes to git immediately)
-
-### Priorities
-
-- `0` - Critical (security, data loss, broken builds)
-- `1` - High (major features, important bugs)
-- `2` - Medium (default, nice-to-have)
-- `3` - Low (polish, optimization)
-- `4` - Backlog (future ideas)
-
-## Project Structure
-
-```
-beads/
-├── cmd/bd/              # CLI commands (add new commands here)
-├── internal/
-│   ├── types/           # Core data types
-│   └── storage/         # Storage layer
-│       └── sqlite/      # SQLite implementation
-├── integrations/
-│   └── beads-mcp/       # MCP server (Python)
-├── examples/            # Integration examples
-├── docs/                # Documentation
-└── .beads/
-    ├── beads.db         # SQLite database (DO NOT COMMIT)
-    └── issues.jsonl     # Git-synced issue storage
+```bash
+openspec validate <change-id> --strict
 ```
 
-## Available Resources
+## Issue Tracking
 
-### MCP Server (Recommended)
-Use the beads MCP server for native function calls instead of shell commands:
-- Install: `pip install beads-mcp`
-- Functions: `mcp__beads__ready()`, `mcp__beads__create()`, etc.
-- See `integrations/beads-mcp/README.md`
+This repository tracks work in `.beads/`. Use `br` commands with JSON output for automation:
 
-### Scripts
-- `./scripts/bump-version.sh <version> --commit` - Update all version files atomically
-- `./scripts/release.sh <version>` - Complete release workflow
-- `./scripts/update-homebrew.sh <version>` - Update Homebrew formula
+```bash
+br ready --json
+br show <id> --json
+br update <id> --status in_progress --json
+br close <id> --reason "Done" --json
+```
 
-### Key Documentation
-- **AGENTS.md** - Comprehensive AI agent guide (detailed workflows, advanced features)
-- **AGENT_INSTRUCTIONS.md** - Development procedures, testing, releases
-- **README.md** - User-facing documentation
-- **docs/CLI_REFERENCE.md** - Complete command reference
+Do not create markdown TODO trackers.
 
-## CLI Help
+## Editing Guidelines
 
-Run `bd <command> --help` to see all available flags for any command.
-For example: `bd create --help` shows `--parent`, `--deps`, `--assignee`, etc.
-
-## Important Rules
-
-- ✅ Use bd for ALL task tracking
-- ✅ Always use `--json` flag for programmatic use
-- ✅ Run `bd sync` at end of sessions
-- ✅ Test with `BEADS_DB=/tmp/test.db`
-- ✅ Run `bd <cmd> --help` to discover available flags
-- ❌ Do NOT create markdown TODO lists
-- ❌ Do NOT create test issues in production DB
-- ❌ Do NOT commit `.beads/beads.db` (JSONL only)
-
----
-
-**For detailed workflows and advanced features, see [AGENTS.md](../AGENTS.md)**
+- Keep changes scoped to task acceptance criteria.
+- Update tests/docs when behavior or developer workflow changes.
+- Avoid destructive git commands unless explicitly requested.
