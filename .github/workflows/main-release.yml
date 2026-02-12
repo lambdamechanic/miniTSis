@@ -80,4 +80,9 @@ jobs:
         if: steps.changesets.outputs.has_changesets == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/scripts/create-release-artifacts.sh
+        run: |
+          set -euo pipefail
+          if ! bash .github/scripts/create-release-artifacts.sh; then
+            echo "::error::Release artifacts failed after successful publish."
+            exit 1
+          fi

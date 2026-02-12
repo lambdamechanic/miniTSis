@@ -1,0 +1,16 @@
+name: Release Artifact Coupling Sandbox
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-coupling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release artifact coupling semantics
+        run: bash scripts/release/validate-artifact-coupling.sh

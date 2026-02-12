@@ -24,6 +24,7 @@
     "scripts": {
         "dev": "turbo run dev",
         "release:check-prereqs": "bash .github/scripts/check-release-prereqs.sh",
+        "release:validate-artifact-coupling": "bash scripts/release/validate-artifact-coupling.sh",
         "release:validate-missing-prereq": "bash scripts/release/validate-missing-prereq.sh",
         "publish-packages": "npm exec --no -- changeset version && npm exec --no -- turbo run build lint test && npm exec --no -- changeset publish"
     }
