@@ -10,7 +10,9 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Release job can push a version-bump commit back to main; do not cancel the
+  # in-flight publish run in that case.
+  cancel-in-progress: false
 
 jobs:
   node:
