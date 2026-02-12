@@ -5,6 +5,22 @@
 
     "version": "1.0.0",
     "description": "monorepo for miniTSis",
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lambdamechanic/miniTSis.git"
+    },
+    "homepage": "https://github.com/lambdamechanic/miniTSis#readme",
+    "bugs": {
+        "url": "https://github.com/lambdamechanic/miniTSis/issues"
+    },
+    "keywords": [
+        "typescript",
+        "property-based-testing",
+        "generative-testing",
+        "shrinking",
+        "minitsis"
+    ],
     "private": true,
     "workspaces": [
         "packages/*"
