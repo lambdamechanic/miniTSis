@@ -75,3 +75,9 @@ jobs:
       - name: Publish packages (OIDC)
         if: steps.changesets.outputs.has_changesets == 'true'
         run: NPM_CONFIG_PROVENANCE=true npm run publish-packages
+
+      - name: Create release artifacts
+        if: steps.changesets.outputs.has_changesets == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/create-release-artifacts.sh
